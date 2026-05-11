@@ -1,0 +1,87 @@
+I want you to improve the whole project UI/UX and make it feel modern, polished, and premium.
+
+Based on the current project structure and features, redesign the visual experience to match today’s modern mobile apps and websites. The goal is not only to make the app look better, but also to make it feel smooth, interactive, and professional.
+
+Main requirements:
+
+1. Modern UI Design
+- Use a clean, modern, premium design style.
+- Improve spacing, padding, typography, colors, cards, buttons, icons, shadows, borders, and layout hierarchy.
+- Make every screen feel consistent with the same design language.
+- Avoid old/basic/default-looking UI.
+- The design should feel suitable for a high-quality educational/commercial app.
+
+2. Rich Animations
+- Add smooth animations across the app wherever appropriate.
+- Use page transition animations between screens.
+- Add entrance animations for cards, sections, lists, buttons, modals, and content blocks.
+- Add micro-interactions for buttons, tabs, icons, sliders, video controls, menus, dropdowns, and form fields.
+- Add hover, press, focus, loading, success, and error states with smooth animation.
+- Animations should feel elegant and natural, not random or annoying.
+- Keep performance optimized and avoid heavy animations that cause lag.
+
+3. Navigation and Page Transitions
+- Improve transitions when moving between pages, tabs, and nested screens.
+- Forward navigation should feel natural and smooth.
+- Back navigation should have a reverse animation that visually matches the forward transition.
+- Make tab switching animated and visually clear.
+- Make active tabs, selected filters, and current sections obvious.
+
+4. Cards and Lists
+- Redesign cards to look modern and interactive.
+- Add subtle motion when cards appear, are pressed, hovered, or selected.
+- Improve list spacing and readability.
+- Use skeleton loaders or shimmer effects while content is loading.
+- Empty states should look designed, not plain.
+
+5. Buttons and Actions
+- Redesign all buttons with modern styles.
+- Add animated press feedback.
+- Important actions should feel visually clear.
+- Disabled buttons should have a clear disabled state.
+- Loading buttons should show a smooth loading indicator.
+
+6. Forms and Inputs
+- Improve input fields, dropdowns, search bars, filters, and forms.
+- Add focus animations.
+- Add validation states with friendly error messages.
+- Make forms easy to use on mobile and desktop.
+
+7. Media / Video Experience
+- If the project contains video or media screens, improve the player UI to feel custom and premium.
+- Add animated controls, smooth seek behavior, volume controls, playback speed controls, quality selector, and section/chapter list if applicable.
+- Make the media experience clean, focused, and modern.
+
+8. Responsive Design
+- Make sure the UI works perfectly on mobile, tablet, and desktop sizes.
+- Avoid layouts breaking on small screens.
+- Use responsive spacing, font sizes, and grids.
+
+9. Dark / Light Mode
+- If the project already supports dark/light mode, polish both modes.
+- If not, prepare the design system in a way that can support dark/light mode later.
+- Colors should be accessible and readable.
+
+10. Design System
+- Create or improve a reusable design system.
+- Use consistent components for buttons, cards, inputs, modals, tabs, headers, badges, loaders, and navigation items.
+- Avoid duplicated styling.
+- Keep the code clean and maintainable.
+
+11. Performance
+- Keep animations smooth and optimized.
+- Avoid unnecessary re-renders.
+- Make sure the app remains fast even with many animations.
+- Use best practices for the framework used in this project.
+
+12. Important Implementation Rules
+- First, analyze the current project structure, screens, and styling system.
+- Do not randomly rewrite the whole project.
+- Improve the UI step by step while keeping the current functionality working.
+- Do not remove existing features unless they are clearly unused or broken.
+- Do not break routing, authentication, APIs, database logic, or existing business logic.
+- Keep the code clean, organized, and easy to extend.
+- After finishing, test the main user flows and fix any UI or animation bugs.
+
+Final goal:
+Make the project feel like a modern, professional, animated, high-quality app/website with a smooth user experience, beautiful visual design, and strong attention to detail.

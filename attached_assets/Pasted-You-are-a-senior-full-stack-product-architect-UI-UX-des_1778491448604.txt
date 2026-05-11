@@ -1,0 +1,1195 @@
+You are a senior full-stack product architect, UI/UX designer, mobile app developer, backend engineer, and security-focused SaaS builder.
+
+I want you to build a complete application from scratch called:
+
+Warqless
+
+Warqless is a digital platform for educational books, especially external school books and study books. The main goal is to replace the traditional printed book experience with a cheaper, smarter, protected, and interactive digital book experience.
+
+The app should allow students to buy licensed digital books from publishing companies, read them inside the app only, write notes and highlights, borrow/lend books in a controlled way, and access interactive study features. The platform should also include an admin dashboard and publisher dashboard so book companies can upload, manage, sell, and track their digital books.
+
+The brand idea:
+Warqless = books without paper.
+Main slogan:
+“Your books. No paper.”
+Arabic slogan:
+“كتبك من غير ورق”
+
+The product is mainly targeting students and educational book publishers in Egypt and the Arab world.
+
+==================================================
+1. CORE PRODUCT IDEA
+==================================================
+
+Warqless is not just a PDF store. It is a protected digital book marketplace and reading platform.
+
+The user should not download an open PDF file. Instead, the user buys a digital license to read the book inside the Warqless app.
+
+The app should support:
+- Student accounts
+- Publisher/company accounts
+- Admin accounts
+- Digital book marketplace
+- Protected in-app reader
+- Book purchase system
+- Book license system
+- Device restriction system
+- Book lending/borrowing system
+- Notes, highlights, bookmarks, and pen annotations
+- Publisher analytics dashboard
+- Admin dashboard
+- Coupon system
+- Payment system
+- Order history
+- User library
+- Book categories by grade, subject, publisher, and academic year
+
+The focus should be on educational books such as:
+- Secondary school books
+- External school books
+- Revision books
+- Final revision books
+- Question banks
+- Workbooks
+- Exam preparation books
+- Digital study bundles
+
+==================================================
+2. TARGET USERS
+==================================================
+
+There are 4 main user types:
+
+A) Student / Reader
+The student can:
+- Create an account
+- Browse books
+- Search for books
+- Filter by grade, subject, publisher, year, price, and book type
+- Buy a digital book
+- Open purchased books inside the app
+- Read books securely
+- Add highlights
+- Add handwritten notes using a pen tool
+- Add text notes
+- Add bookmarks
+- Continue reading from the last page
+- View reading progress
+- Borrow a book from another user
+- Lend a book to another user if the publisher allows it
+- Use activation codes if available
+- Manage devices
+- View purchase history
+- Contact support
+
+B) Publisher / Book Company
+The publisher can:
+- Create a publisher account, subject to admin approval
+- Upload books
+- Add book metadata
+- Set book prices
+- Set book cover
+- Set preview pages
+- Enable or disable lending
+- Set lending duration
+- Set number of allowed lends per purchase
+- View sales analytics
+- View revenue reports
+- View active users
+- View reading engagement statistics
+- Create coupons for their own books if allowed
+- Manage book editions and academic years
+- Upload revised versions of books
+- See suspicious activity reports related to their books
+
+C) Admin
+The admin can:
+- Manage all users
+- Manage students
+- Manage publishers
+- Approve or reject publisher accounts
+- Approve or reject uploaded books before publishing
+- Manage categories, grades, subjects, and academic years
+- Manage all books
+- Manage prices and commissions
+- Manage platform-wide coupons
+- Manage transactions and payouts
+- View full analytics
+- View revenue reports
+- View suspicious activities
+- Handle support tickets
+- Suspend users
+- Suspend publishers
+- Control lending rules globally
+- Control device limits globally
+- Manage app settings
+- Send notifications
+
+D) Support / Moderator
+Optional role:
+- View support tickets
+- Help users with device reset requests
+- Review reported issues
+- Escalate issues to admin
+- Cannot access sensitive financial settings unless permitted
+
+==================================================
+3. MAIN STUDENT APP FEATURES
+==================================================
+
+Build a modern mobile-first app with a clean, premium, student-friendly UI.
+
+Main navigation should include:
+- Home
+- Browse Books
+- My Library
+- Borrowed Books
+- Account
+
+Home screen:
+- Welcome message
+- Continue reading section
+- Recently purchased books
+- Recommended books
+- Popular books
+- New releases
+- Books by grade
+- Books by subject
+- Active offers
+- Publisher highlights
+
+Browse Books screen:
+- Search bar
+- Filters:
+  - Grade
+  - Subject
+  - Publisher
+  - Academic year
+  - Price range
+  - Book type
+  - Newest
+  - Most popular
+- Book cards showing:
+  - Cover
+  - Title
+  - Publisher
+  - Grade
+  - Subject
+  - Price
+  - Discount if available
+  - Rating if implemented later
+  - “View Details” button
+
+Book Details page:
+- Book cover
+- Title
+- Publisher
+- Subject
+- Grade
+- Academic year
+- Description
+- Number of pages
+- Book type
+- Price
+- Preview pages
+- Features included
+- Lending availability
+- Device restriction information
+- Buy button
+- Add to wishlist button
+- Related books
+- Publisher information
+
+My Library:
+- All purchased books
+- Reading progress
+- Last opened date
+- Filter by subject/grade/year
+- Search inside library
+- Download/offline license status if implemented
+- Open book button
+
+Borrowed Books:
+- Books borrowed from other users
+- Remaining borrowing time
+- Return book button
+- Expired borrowed books
+- Rules explanation
+
+Account:
+- Profile info
+- Phone number
+- Email
+- Linked devices
+- Purchase history
+- Active subscriptions
+- Coupons
+- Support
+- Terms and privacy
+- Logout
+
+==================================================
+4. SECURE DIGITAL READER
+==================================================
+
+The digital reader is the most important part of the app.
+
+The user must not receive an open downloadable PDF.
+
+The reader should:
+- Open books only inside the app
+- Stream or securely load book pages
+- Prevent direct file download
+- Prevent copy/paste where possible
+- Prevent printing
+- Prevent screenshots where possible, especially on Android using FLAG_SECURE or equivalent
+- Display visible or semi-visible watermark with user ID / phone / email / order ID
+- Add hidden forensic watermark if technically possible
+- Track reading session activity
+- Detect suspicious behavior such as too many device changes or abnormal page capture patterns
+
+Reader features:
+- Page navigation
+- Smooth page flipping
+- Zoom in/out
+- Search inside book if OCR/text layer exists
+- Table of contents
+- Go to page number
+- Continue from last page
+- Light/dark/sepia reading mode
+- Font controls only if book is reflowable; otherwise PDF/image page view
+- Bookmarks
+- Highlights
+- Text notes
+- Handwritten pen annotations
+- Eraser
+- Different pen colors
+- Different pen thickness
+- Undo/redo
+- Save annotations per user and per book
+- Sync annotations to cloud
+- Offline cache only if secure and license-limited
+
+Important:
+Basic note editing and erasing should be included for users who bought the book. Do not make basic erasing a paid feature because that would feel unfair. Instead, premium subscription features can include advanced tools such as cloud sync, export, AI summaries, flashcards, advanced pen layers, and study analytics.
+
+==================================================
+5. DEVICE RESTRICTION AND LICENSE SYSTEM
+==================================================
+
+Each book purchase creates a digital license.
+
+Rules:
+- A user can read the book only from authorized devices.
+- Default: allow one primary device.
+- Optional: allow two devices if admin/publisher chooses.
+- Do not allow the same account to read the same book on multiple devices at the same time.
+- Device changes should be limited.
+- User can request device reset through support.
+- Admin can manually reset devices.
+- Track device fingerprint, platform, app version, IP logs, and last active time.
+
+Recommended license behavior:
+- The app requires online verification before opening a book.
+- Optional short offline grace period can be supported, such as 24–48 hours after last successful license check.
+- After grace period, user must reconnect to verify license.
+- If suspicious behavior is detected, temporarily lock the license and notify support/admin.
+
+License states:
+- Active
+- Expired
+- Suspended
+- Refunded
+- Borrowed out
+- Borrowed in
+- Pending verification
+
+==================================================
+6. BOOK LENDING / BORROWING FEATURE
+==================================================
+
+This is one of the unique features of Warqless.
+
+The goal is to simulate lending a physical book:
+If I lend my book to someone, I cannot use it while they have it.
+
+Lending rules:
+- Publisher can enable or disable lending per book.
+- Publisher can define lending duration:
+  - 3 days
+  - 7 days
+  - 14 days
+  - Custom duration if allowed by admin
+- Publisher can define maximum number of lends per purchased license.
+- While the book is lent, the original owner cannot open the book.
+- Borrower can read the book only inside the app.
+- Borrower cannot re-lend the book.
+- Borrower cannot download/export/copy/print the book.
+- At the end of the lending period, access returns automatically to the owner.
+- Owner can see current lending status.
+- Borrower can return early.
+- Lending can be free or paid depending on publisher/admin settings.
+
+Lending flow:
+1. Owner opens a purchased book.
+2. Clicks “Lend this book”.
+3. Enters borrower phone/email/user ID.
+4. Chooses lending duration if multiple options are available.
+5. App shows warning:
+   “You will not be able to read this book during the lending period.”
+6. Owner confirms.
+7. Borrower receives notification/invite.
+8. Borrower accepts.
+9. License state changes:
+   Owner: Borrowed out
+   Borrower: Borrowed in
+10. Access automatically returns after expiration.
+
+Admin should be able to:
+- View all lending transactions
+- Disable lending globally
+- Disable lending for specific books
+- Investigate suspicious lending behavior
+
+==================================================
+7. PUBLISHER DASHBOARD
+==================================================
+
+Create a web dashboard for publishers.
+
+Publisher dashboard sections:
+
+A) Overview
+- Total sales
+- Total revenue
+- Active books
+- Active users
+- Most sold books
+- Monthly sales chart
+- Recent orders
+- Top grades
+- Top subjects
+- Top governorates if available
+
+B) Books Management
+Publisher can:
+- Add new book
+- Edit book
+- Upload book file
+- Upload cover
+- Add preview pages
+- Set price
+- Set discount
+- Set grade
+- Set subject
+- Set academic year
+- Set edition
+- Set number of pages
+- Set book type
+- Enable/disable lending
+- Set lending rules
+- Submit book for admin approval
+- Unpublish book if allowed
+- Upload revised version
+
+Book status:
+- Draft
+- Pending review
+- Approved
+- Rejected
+- Published
+- Unpublished
+- Archived
+
+C) Analytics
+For each book:
+- Number of purchases
+- Revenue
+- Active readers
+- Average reading progress
+- Most opened chapters/pages
+- Average session duration
+- Number of highlights
+- Number of notes
+- Number of lending transactions
+- Device activity
+- Suspicious activity alerts
+
+D) Financial Reports
+- Gross sales
+- Platform commission
+- Net publisher revenue
+- Refunds
+- Payout status
+- Downloadable reports CSV/PDF
+- Date filters
+
+E) Coupons
+Publisher can create coupons if allowed:
+- Percentage discount
+- Fixed discount
+- Book-specific coupons
+- Expiry date
+- Usage limit
+- Student-specific coupon
+- Activation code batch
+
+F) Support
+- View issues related to their books
+- Respond to admin messages
+- Submit support requests
+
+==================================================
+8. ADMIN DASHBOARD
+==================================================
+
+Create a powerful admin dashboard.
+
+Admin sections:
+
+A) Main Overview
+- Total users
+- Total students
+- Total publishers
+- Total books
+- Total sales
+- Total revenue
+- Monthly recurring revenue if subscriptions exist
+- Total commissions
+- Active licenses
+- Suspicious activities
+- Pending publisher approvals
+- Pending book approvals
+
+B) User Management
+- View all users
+- Search users
+- Filter by role/status
+- View user profile
+- View purchases
+- View licenses
+- View devices
+- Reset device
+- Suspend account
+- Reactivate account
+- View lending history
+- View support tickets
+
+C) Publisher Management
+- Approve/reject publishers
+- View publisher profile
+- View publisher books
+- View publisher revenue
+- Set commission rate
+- Suspend publisher
+- Message publisher
+- Review uploaded content
+
+D) Book Management
+- View all books
+- Approve/reject books
+- Edit metadata
+- Feature books on homepage
+- Unpublish books
+- Archive books
+- View book analytics
+- View book file/security status
+
+E) Categories Management
+- Grades
+- Subjects
+- Academic years
+- Book types
+- Publishers
+- Tags
+
+F) Orders and Payments
+- All orders
+- Payment status
+- Refunds
+- Failed payments
+- Invoices
+- Coupon usage
+- Revenue split
+- Export reports
+
+G) Payouts
+- Publisher balances
+- Pending payouts
+- Paid payouts
+- Manual payout confirmation
+- Payout history
+- Commission settings
+
+H) Subscriptions
+Optional:
+- Manage premium plans
+- Plan features
+- Pricing
+- Active subscribers
+- Cancelled subscriptions
+- Trial users
+
+I) Security and Anti-Piracy
+- Suspicious login activity
+- Too many device changes
+- Too many screenshot attempts if detectable
+- Abnormal page access
+- Repeated failed license checks
+- Watermark tracking
+- Blocked users
+- Manual investigations
+
+J) Support Tickets
+- All support tickets
+- Assign ticket to support agent
+- Ticket statuses:
+  - Open
+  - In progress
+  - Waiting for user
+  - Resolved
+  - Closed
+
+K) App Settings
+- Platform commission default
+- Device limit
+- Offline grace period
+- Lending default rules
+- Payment settings
+- Notification templates
+- Terms and privacy content
+- Maintenance mode
+
+==================================================
+9. SUBSCRIPTION / PREMIUM FEATURES
+==================================================
+
+Do not make basic book reading or basic annotation unfairly locked.
+
+Basic features after purchasing a book:
+- Read book
+- Bookmark
+- Highlight
+- Add notes
+- Write with pen
+- Erase annotations
+- Continue reading
+- Basic search if available
+
+Premium subscription features can include:
+- Cloud sync across allowed devices
+- Export notes
+- Export highlights
+- Advanced pen tools
+- Advanced annotation layers
+- AI chapter summaries
+- AI quiz generation
+- Flashcards from highlights
+- Study progress analytics
+- Smart revision reminders
+- Priority support
+- Larger storage for notes
+- Advanced search across all owned books
+
+Premium plans:
+- Monthly
+- Yearly
+- Student discounted yearly plan
+
+==================================================
+10. PAYMENTS AND ORDERS
+==================================================
+
+The app should support:
+- Book purchases
+- Coupon discounts
+- Activation codes
+- Free books
+- Paid books
+- Bundles
+- Refund logic
+- Publisher revenue split
+- Platform commission
+
+Payment methods should be designed for Egypt/Arab market:
+- Cards
+- Wallets if possible
+- Fawry or local payment gateway integration if possible later
+- Manual activation codes for schools/bookstores/sales reps
+
+Order status:
+- Pending
+- Paid
+- Failed
+- Refunded
+- Cancelled
+
+After successful payment:
+- Create license
+- Add book to user library
+- Send notification
+- Generate invoice/receipt
+- Update publisher dashboard
+
+==================================================
+11. ACTIVATION CODES
+==================================================
+
+Activation codes are important for educational publishers.
+
+Use cases:
+- Publisher prints activation code inside a physical book
+- Bookstores sell digital access cards
+- Schools distribute codes
+- Sales reps sell codes offline
+
+Activation code features:
+- Admin/publisher can generate code batches
+- Code can unlock one book or bundle
+- Code can expire
+- Code can be single-use or limited-use
+- Code can be assigned to a publisher
+- Track who redeemed the code
+- Track redemption date
+- Prevent reuse
+
+==================================================
+12. BOOK BUNDLES
+==================================================
+
+Support bundles such as:
+- Book + answer book
+- Book + final revision
+- Book + video solutions
+- Subject bundle
+- Grade bundle
+- Publisher bundle
+- Full year package
+
+Bundle page should show:
+- Included books
+- Total original price
+- Discounted bundle price
+- Publisher
+- Grade/subject
+- Buy bundle button
+
+==================================================
+13. NOTIFICATIONS
+==================================================
+
+Support notifications for:
+- Purchase confirmation
+- Book added to library
+- Lending invitation
+- Lending accepted
+- Lending expired
+- Book returned
+- New book release
+- Discount offers
+- Publisher announcements
+- License/device security alerts
+- Subscription renewal
+- Support ticket replies
+
+Channels:
+- In-app notifications
+- Push notifications
+- Email
+- SMS/WhatsApp later if needed
+
+==================================================
+14. UI/UX STYLE
+==================================================
+
+Design direction:
+- Clean
+- Modern
+- Premium
+- Student-friendly
+- Arabic-first but supports English
+- Mobile-first
+- Smooth animations
+- Fast navigation
+- Clear hierarchy
+- Avoid clutter
+
+Brand:
+Name: Warqless
+Meaning: paperless books
+Primary feel: trust, education, modern digital ownership
+
+Recommended UI:
+- Rounded cards
+- Soft shadows
+- Clear book covers
+- Bottom navigation
+- Smooth transitions
+- Reading-first design
+- Strong search/filter experience
+- Dark mode support
+- Arabic RTL support
+- English LTR support
+
+Important:
+The app must support Arabic RTL from the beginning because the main market is Egypt and the Arab world.
+
+Main Arabic labels examples:
+- الرئيسية
+- تصفح الكتب
+- مكتبتي
+- الكتب المستعارة
+- الحساب
+- شراء الكتاب
+- فتح الكتاب
+- إعارة الكتاب
+- إضافة ملاحظة
+- تظليل
+- القلم
+- الإعدادات
+
+==================================================
+15. TECHNICAL ARCHITECTURE
+==================================================
+
+Please design and implement the system with a scalable architecture.
+
+Recommended structure:
+- Mobile app frontend
+- Web admin dashboard
+- Web publisher dashboard
+- Backend API
+- Database
+- Secure file storage
+- Authentication
+- Payment integration layer
+- Analytics/event tracking
+- Notification service
+
+Use any suitable modern stack, but prioritize:
+- Clean architecture
+- Security
+- Scalability
+- Maintainability
+- Clear folder structure
+- Strong database schema
+- API documentation
+- Role-based access control
+- Arabic/RTL support
+- Responsive web dashboard
+
+Possible stack:
+- Frontend mobile: React Native / Flutter
+- Web dashboard: Next.js / React
+- Backend: Node.js / NestJS / Express or Laravel
+- Database: PostgreSQL
+- Storage: S3-compatible storage
+- Auth: JWT/session-based with refresh tokens
+- Payments: abstraction layer for future payment gateway
+- Admin dashboard: responsive web
+- Publisher dashboard: responsive web
+
+If building a prototype first, use a full-stack framework that allows fast iteration while keeping the architecture clean.
+
+==================================================
+16. DATABASE ENTITIES
+==================================================
+
+Design a database schema including at least:
+
+User
+- id
+- name
+- email
+- phone
+- password_hash
+- role
+- status
+- created_at
+- updated_at
+
+StudentProfile
+- user_id
+- grade_id
+- governorate
+- school_name optional
+- preferences
+
+Publisher
+- id
+- company_name
+- legal_name
+- contact_person
+- phone
+- email
+- address
+- status
+- commission_rate
+- created_at
+
+Book
+- id
+- publisher_id
+- title
+- slug
+- description
+- cover_url
+- file_url / secure_file_reference
+- grade_id
+- subject_id
+- academic_year_id
+- book_type
+- edition
+- page_count
+- price
+- discount_price
+- status
+- lending_enabled
+- max_lends
+- lending_duration_days
+- created_at
+- updated_at
+
+BookVersion
+- id
+- book_id
+- version_number
+- file_reference
+- changelog
+- status
+- created_at
+
+Order
+- id
+- user_id
+- total_amount
+- discount_amount
+- payment_status
+- payment_method
+- created_at
+
+OrderItem
+- id
+- order_id
+- book_id
+- price
+- publisher_share
+- platform_commission
+
+License
+- id
+- user_id
+- book_id
+- order_item_id
+- status
+- device_limit
+- offline_grace_until
+- created_at
+- expires_at optional
+
+Device
+- id
+- user_id
+- device_fingerprint
+- device_name
+- platform
+- app_version
+- last_active_at
+- status
+
+LicenseDevice
+- license_id
+- device_id
+- authorized_at
+- status
+
+LendingTransaction
+- id
+- license_id
+- owner_user_id
+- borrower_user_id
+- book_id
+- status
+- starts_at
+- ends_at
+- returned_at
+- created_at
+
+Annotation
+- id
+- user_id
+- book_id
+- page_number
+- type
+- content
+- coordinates
+- style
+- created_at
+- updated_at
+
+Bookmark
+- id
+- user_id
+- book_id
+- page_number
+- title
+- created_at
+
+ReadingProgress
+- id
+- user_id
+- book_id
+- current_page
+- progress_percent
+- last_opened_at
+
+Coupon
+- id
+- code
+- type
+- value
+- scope
+- book_id optional
+- publisher_id optional
+- usage_limit
+- used_count
+- starts_at
+- expires_at
+- status
+
+ActivationCode
+- id
+- code
+- book_id optional
+- bundle_id optional
+- publisher_id
+- status
+- redeemed_by
+- redeemed_at
+- expires_at
+
+Payment
+- id
+- order_id
+- provider
+- provider_reference
+- amount
+- status
+- created_at
+
+Payout
+- id
+- publisher_id
+- amount
+- status
+- period_start
+- period_end
+- paid_at
+
+SupportTicket
+- id
+- user_id
+- assigned_to
+- subject
+- message
+- status
+- created_at
+- updated_at
+
+SecurityEvent
+- id
+- user_id
+- book_id optional
+- license_id optional
+- type
+- severity
+- metadata
+- created_at
+
+AnalyticsEvent
+- id
+- user_id
+- book_id optional
+- event_type
+- metadata
+- created_at
+
+Category tables:
+- Grade
+- Subject
+- AcademicYear
+- BookType
+
+==================================================
+17. SECURITY REQUIREMENTS
+==================================================
+
+Security is critical because publishers will only trust Warqless if books are protected.
+
+Implement:
+- Role-based access control
+- Secure authentication
+- Password hashing
+- Rate limiting
+- Input validation
+- Secure file storage
+- Signed URLs or secure streaming
+- No public direct PDF links
+- Device authorization
+- License verification before opening a book
+- Watermarking
+- Audit logs
+- Security events
+- Admin-only access to sensitive data
+- Publisher can only access their own books and analytics
+- Student can only access purchased/borrowed books
+- Prevent IDOR vulnerabilities
+- Protect APIs from unauthorized access
+
+Important:
+Never expose raw book files publicly.
+
+==================================================
+18. ANALYTICS REQUIREMENTS
+==================================================
+
+Track useful events:
+- Book viewed
+- Book purchased
+- Book opened
+- Page viewed
+- Search performed
+- Highlight created
+- Note created
+- Bookmark created
+- Lending started
+- Lending accepted
+- Lending expired
+- Device authorized
+- License check failed
+- Suspicious activity detected
+
+Publisher analytics should show aggregated data, not private student notes.
+
+Admin analytics can be more detailed but must respect privacy.
+
+==================================================
+19. MVP SCOPE
+==================================================
+
+Start with a realistic MVP, then structure the code so advanced features can be added later.
+
+MVP must include:
+- Student registration/login
+- Publisher registration/login
+- Admin login
+- Role-based access control
+- Book marketplace
+- Book details
+- Buy book flow with simulated payment or payment abstraction
+- User library
+- Protected reader
+- Basic watermark
+- Basic highlights/notes/bookmarks
+- Basic pen annotation if possible
+- License system
+- Device limit
+- Publisher dashboard
+- Admin dashboard
+- Book upload and approval flow
+- Basic sales reports
+- Basic lending feature
+- Coupon or activation code support
+- Arabic RTL support
+
+Do not overcomplicate the first version with AI, but prepare architecture for AI later.
+
+==================================================
+20. FUTURE FEATURES
+==================================================
+
+Prepare for:
+- AI tutor based on book content
+- Chapter summaries
+- Auto-generated quizzes
+- Flashcards from highlights
+- Video lessons linked to pages
+- Question banks
+- School/center accounts
+- Teacher accounts
+- Classroom assignments
+- White-label publisher apps
+- Offline secure reading
+- Advanced anti-piracy
+- OCR/search in scanned books
+- Audio books
+- Text-to-speech
+- Parent dashboard
+- Study plans
+- Gamification
+- Certificates
+
+==================================================
+21. REQUIRED OUTPUT FROM YOU
+==================================================
+
+Before coding, analyze the full requirements and create a clear implementation plan.
+
+Then build the application step by step.
+
+Your output should include:
+1. Product understanding summary
+2. Recommended tech stack
+3. Database schema
+4. API design
+5. User roles and permissions matrix
+6. UI screens list
+7. Admin dashboard structure
+8. Publisher dashboard structure
+9. Security/DRM strategy
+10. MVP implementation plan
+11. Then start implementing the project files
+
+Important coding instructions:
+- Build clean, production-quality code.
+- Use a scalable folder structure.
+- Add comments where needed.
+- Do not hardcode sensitive secrets.
+- Use environment variables.
+- Make the UI polished and modern.
+- Support Arabic RTL from the start.
+- Use reusable components.
+- Make all permissions strict.
+- Keep publisher data isolated.
+- Keep student licenses secure.
+- Include mock data where needed for testing.
+- Include seed data for grades, subjects, publishers, and books.
+- Include clear README setup instructions.
+- Include testing instructions.
+
+==================================================
+22. FINAL PRODUCT POSITIONING
+==================================================
+
+Warqless should be positioned as:
+
+“The digital platform for external school books.”
+
+Arabic positioning:
+“منصة الكتب الخارجية الرقمية”
+
+Core promise:
+- Cheaper than printed books
+- No shipping
+- No waiting
+- Protected for publishers
+- Better study experience for students
+- Real analytics for book companies
+
+Main value for students:
+“Buy your school books digitally, read them anytime, write on them, and study smarter.”
+
+Main value for publishers:
+“Sell digital protected books without printing, storage, shipping, or returns, while getting real analytics about students’ reading behavior.”
+
+Build Warqless as a serious product that can become the future of educational books in Egypt and the Arab world.

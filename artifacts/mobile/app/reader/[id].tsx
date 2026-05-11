@@ -1,0 +1,693 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useApp } from "@/context/AppContext";
+import { BOOKS } from "@/data/mockData";
+import { useColors } from "@/hooks/useColors";
+
+type ReadingMode = "light" | "dark" | "sepia";
+type ActiveTool = "none" | "highlight" | "pen" | "note";
+
+const READING_MODES: { mode: ReadingMode; bg: string; fg: string; label: string }[] = [
+  { mode: "light", bg: "#FFFFFF", fg: "#1A1A1A", label: "Light" },
+  { mode: "sepia", bg: "#F9F0DC", fg: "#3B2A1A", label: "Sepia" },
+  { mode: "dark", bg: "#1A1A2E", fg: "#E8E8F0", label: "Dark" },
+];
+
+const SAMPLE_PAGES: string[][] = [
+  [
+    "Chapter 1: Introduction",
+    "Mathematics is the language of the universe — a precise, universal system for describing patterns, relationships, and structures in the world around us.",
+    "In this chapter, we will explore the fundamental concepts that form the backbone of advanced mathematics. Each topic builds on the previous, creating a comprehensive framework for problem-solving.",
+    "Key Concepts:",
+    "• Sets and their properties",
+    "• Functions and mappings",
+    "• Limits and continuity",
+    "• The concept of infinity",
+  ],
+  [
+    "1.1 Sets and Logic",
+    "A set is a well-defined collection of distinct objects. These objects are called elements or members of the set.",
+    "Example: A = {1, 2, 3, 4, 5} is a set of the first five natural numbers.",
+    "Set Builder Notation: A = {x | x ∈ ℕ, x ≤ 5}",
+    "Operations on Sets:",
+    "Union (A ∪ B): All elements in A or B",
+    "Intersection (A ∩ B): Elements in both A and B",
+    "Complement (A'): Elements not in A",
+    "DeMorgan's Laws:",
+    "(A ∪ B)' = A' ∩ B'",
+    "(A ∩ B)' = A' ∪ B'",
+  ],
+  [
+    "1.2 Functions and Relations",
+    "A function f: A → B is a rule that assigns exactly one element of B to each element of A.",
+    "Domain: The set of all valid inputs (set A)",
+    "Range: The set of all actual outputs",
+    "Codomain: The set of all possible outputs (set B)",
+    "Types of Functions:",
+    "• One-to-one (Injective): Different inputs → different outputs",
+    "• Onto (Surjective): Every element in B is mapped to",
+    "• Bijective: Both one-to-one and onto",
+    "The Vertical Line Test: A curve in the xy-plane is a function if and only if every vertical line intersects it at most once.",
+  ],
+  [
+    "Practice Problems",
+    "1. Let A = {1, 2, 3, 4, 6, 12} be the set of divisors of 12.",
+    "   Find A ∩ {even numbers less than 10}",
+    "2. Given f(x) = 2x² + 3x - 5, find:",
+    "   a) f(0)   b) f(2)   c) f(-1)",
+    "3. Determine if f(x) = x³ is one-to-one. Justify your answer.",
+    "4. Sketch the graph of f(x) = |x - 2| + 1",
+    "   State its domain and range.",
+    "5. If g(x) = √(x - 3), find the domain of g.",
+    "",
+    "Answers on next page →",
+  ],
+];
+
+export default function ReaderScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { purchasedBooks, borrowedBooks, updateReadingProgress, toggleBookmark } = useApp();
+
+  const book =
+    purchasedBooks.find((b) => b.id === id) ??
+    borrowedBooks.find((b) => b.id === id) ??
+    BOOKS.find((b) => b.id === id);
+
+  const purchasedBook = purchasedBooks.find((b) => b.id === id);
+
+  const [currentPage, setCurrentPage] = useState(purchasedBook?.lastPage ?? 1);
+  const [readingMode, setReadingMode] = useState<ReadingMode>("light");
+  const [showToolbar, setShowToolbar] = useState(true);
+  const [showModeMenu, setShowModeMenu] = useState(false);
+  const [activeTool, setActiveTool] = useState<ActiveTool>("none");
+  const [fontSize, setFontSize] = useState(16);
+  const [noteText, setNoteText] = useState("");
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [notes, setNotes] = useState<{ page: number; text: string }[]>([]);
+  const [highlights, setHighlights] = useState<Set<number>>(new Set());
+  const [showToc, setShowToc] = useState(false);
+
+  const toolbarOpacity = useRef(new Animated.Value(1)).current;
+  const totalPages = book?.pages ?? 100;
+  const pageIndex = Math.min(currentPage - 1, SAMPLE_PAGES.length - 1);
+  const pageContent = SAMPLE_PAGES[pageIndex] ?? SAMPLE_PAGES[0];
+  const isBookmarked = purchasedBook?.bookmarkedPages.includes(currentPage) ?? false;
+
+  const modeStyle = READING_MODES.find((m) => m.mode === readingMode) ?? READING_MODES[0];
+
+  useEffect(() => {
+    const progress = Math.round((currentPage / totalPages) * 100);
+    if (purchasedBook) {
+      updateReadingProgress(purchasedBook.id, currentPage, Math.min(progress, 100));
+    }
+  }, [currentPage]);
+
+  const toggleToolbar = useCallback(() => {
+    const toValue = showToolbar ? 0 : 1;
+    setShowToolbar(!showToolbar);
+    Animated.timing(toolbarOpacity, {
+      toValue,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [showToolbar, toolbarOpacity]);
+
+  const goNext = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((p) => p + 1);
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const goPrev = () => {
+    if (currentPage > 1) {
+      setCurrentPage((p) => p - 1);
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleBookmark = () => {
+    if (purchasedBook) {
+      toggleBookmark(purchasedBook.id, currentPage);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleHighlight = () => {
+    setHighlights((prev) => {
+      const next = new Set(prev);
+      if (next.has(currentPage)) next.delete(currentPage);
+      else next.add(currentPage);
+      return next;
+    });
+    setActiveTool("none");
+  };
+
+  const handleSaveNote = () => {
+    if (noteText.trim()) {
+      setNotes((prev) => [...prev.filter((n) => n.page !== currentPage), { page: currentPage, text: noteText }]);
+      setNoteText("");
+      setShowNoteInput(false);
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const botPad = Platform.OS === "web" ? 34 : insets.bottom;
+
+  if (!book) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.foreground }}>Book not found or not purchased.</Text>
+        <Pressable onPress={() => router.back()}>
+          <Text style={{ color: colors.primary, marginTop: 12 }}>Go Back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: modeStyle.bg }]}>
+      {/* Top toolbar */}
+      <Animated.View
+        style={[
+          styles.topBar,
+          {
+            paddingTop: topPad,
+            backgroundColor: modeStyle.bg,
+            borderBottomColor: modeStyle.fg + "20",
+            opacity: toolbarOpacity,
+          },
+        ]}
+        pointerEvents={showToolbar ? "auto" : "none"}
+      >
+        <View style={styles.topBarInner}>
+          <Pressable onPress={() => router.back()} style={styles.iconBtn}>
+            <Ionicons name="arrow-back" size={22} color={modeStyle.fg} />
+          </Pressable>
+          <View style={styles.topBarCenter}>
+            <Text style={[styles.bookTitleSmall, { color: modeStyle.fg }]} numberOfLines={1}>
+              {book.title}
+            </Text>
+            <Text style={[styles.pageCounter, { color: modeStyle.fg + "80" }]}>
+              Page {currentPage} of {totalPages}
+            </Text>
+          </View>
+          <View style={styles.topBarActions}>
+            <Pressable
+              onPress={() => setShowModeMenu(!showModeMenu)}
+              style={styles.iconBtn}
+            >
+              <Ionicons name="sunny-outline" size={22} color={modeStyle.fg} />
+            </Pressable>
+            <Pressable onPress={() => setShowToc(!showToc)} style={styles.iconBtn}>
+              <Ionicons name="list-outline" size={22} color={modeStyle.fg} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Mode menu */}
+        {showModeMenu && (
+          <View style={[styles.modeMenu, { backgroundColor: modeStyle.bg, borderColor: modeStyle.fg + "20" }]}>
+            <Text style={[styles.modeMenuTitle, { color: modeStyle.fg + "80" }]}>Reading Mode</Text>
+            <View style={styles.modeRow}>
+              {READING_MODES.map((m) => (
+                <Pressable
+                  key={m.mode}
+                  onPress={() => { setReadingMode(m.mode); setShowModeMenu(false); }}
+                  style={[
+                    styles.modeBtn,
+                    { backgroundColor: m.bg, borderColor: m === READING_MODES.find((rm) => rm.mode === readingMode) ? colors.primary : modeStyle.fg + "30" },
+                  ]}
+                >
+                  <Text style={[styles.modeBtnText, { color: m.fg }]}>{m.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.fontSizeRow}>
+              <Text style={[styles.modeMenuTitle, { color: modeStyle.fg + "80" }]}>Font Size</Text>
+              <View style={styles.fontSizeBtns}>
+                <Pressable onPress={() => setFontSize((f) => Math.max(12, f - 1))} style={styles.fontBtn}>
+                  <Text style={[styles.fontBtnText, { color: modeStyle.fg }]}>A-</Text>
+                </Pressable>
+                <Text style={[styles.fontSizeValue, { color: modeStyle.fg }]}>{fontSize}</Text>
+                <Pressable onPress={() => setFontSize((f) => Math.min(22, f + 1))} style={styles.fontBtn}>
+                  <Text style={[styles.fontBtnText, { color: modeStyle.fg }]}>A+</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* TOC */}
+        {showToc && (
+          <View style={[styles.tocPanel, { backgroundColor: modeStyle.bg, borderColor: modeStyle.fg + "20" }]}>
+            <Text style={[styles.modeMenuTitle, { color: modeStyle.fg }]}>Table of Contents</Text>
+            {SAMPLE_PAGES.map((p, i) => (
+              <Pressable
+                key={i}
+                onPress={() => { setCurrentPage(i + 1); setShowToc(false); }}
+                style={[styles.tocItem, { borderBottomColor: modeStyle.fg + "15" }]}
+              >
+                <Text style={[styles.tocText, { color: currentPage === i + 1 ? colors.primary : modeStyle.fg }]}>
+                  {p[0]}
+                </Text>
+                <Text style={[styles.tocPage, { color: modeStyle.fg + "60" }]}>p.{i + 1}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </Animated.View>
+
+      {/* Progress bar */}
+      <View style={[styles.progressStrip, { backgroundColor: modeStyle.fg + "15" }]}>
+        <View
+          style={[
+            styles.progressFill,
+            { backgroundColor: colors.primary, width: `${(currentPage / totalPages) * 100}%` as any },
+          ]}
+        />
+      </View>
+
+      {/* Watermark */}
+      <View style={styles.watermark} pointerEvents="none">
+        <Text style={styles.watermarkText}>WARQLESS · Protected</Text>
+      </View>
+
+      {/* Page content */}
+      <Pressable onPress={toggleToolbar} style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={[styles.pageContent, { paddingTop: 20, paddingBottom: botPad + 80 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {pageContent.map((para, i) => {
+            const isHeading = i === 0;
+            const isBullet = para.startsWith("•");
+            const isFormula = para.includes("=") && para.length < 40 && i > 1;
+            return (
+              <Text
+                key={i}
+                selectable={false}
+                style={[
+                  isHeading ? styles.pageHeading : isBullet ? styles.pageBullet : isFormula ? styles.pageFormula : styles.pageText,
+                  {
+                    color: modeStyle.fg,
+                    fontSize: isHeading ? fontSize + 4 : isFormula ? fontSize - 1 : fontSize,
+                    backgroundColor: highlights.has(currentPage) && !isHeading ? "#FFDD0030" : "transparent",
+                  },
+                ]}
+              >
+                {para}
+              </Text>
+            );
+          })}
+
+          {/* Notes for this page */}
+          {notes.filter((n) => n.page === currentPage).map((n, i) => (
+            <View
+              key={i}
+              style={[styles.noteBox, { backgroundColor: "#FFD60020", borderLeftColor: "#F59E0B" }]}
+            >
+              <Ionicons name="document-text" size={14} color="#F59E0B" />
+              <Text style={[styles.noteText, { color: modeStyle.fg }]}>{n.text}</Text>
+            </View>
+          ))}
+        </ScrollView>
+      </Pressable>
+
+      {/* Note input */}
+      {showNoteInput && (
+        <View style={[styles.noteInputWrap, { backgroundColor: modeStyle.bg, borderTopColor: modeStyle.fg + "20" }]}>
+          <TextInput
+            style={[styles.noteInput, { color: modeStyle.fg, borderColor: modeStyle.fg + "30" }]}
+            placeholder="Add a note..."
+            placeholderTextColor={modeStyle.fg + "60"}
+            value={noteText}
+            onChangeText={setNoteText}
+            multiline
+            autoFocus
+          />
+          <View style={styles.noteInputActions}>
+            <Pressable onPress={() => setShowNoteInput(false)} style={styles.noteCancelBtn}>
+              <Text style={{ color: modeStyle.fg + "80" }}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSaveNote} style={[styles.noteSaveBtn, { backgroundColor: colors.primary }]}>
+              <Text style={styles.noteSaveBtnText}>Save Note</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+
+      {/* Bottom toolbar */}
+      <Animated.View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom: botPad + 4,
+            backgroundColor: modeStyle.bg,
+            borderTopColor: modeStyle.fg + "20",
+            opacity: toolbarOpacity,
+          },
+        ]}
+        pointerEvents={showToolbar ? "auto" : "none"}
+      >
+        {/* Annotation tools */}
+        <View style={styles.toolRow}>
+          <Pressable
+            onPress={handleBookmark}
+            style={[styles.toolBtn, isBookmarked && { backgroundColor: colors.accent + "20" }]}
+          >
+            <Ionicons
+              name={isBookmarked ? "bookmark" : "bookmark-outline"}
+              size={20}
+              color={isBookmarked ? colors.accent : modeStyle.fg}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => { setActiveTool(activeTool === "highlight" ? "none" : "highlight"); handleHighlight(); }}
+            style={[styles.toolBtn, highlights.has(currentPage) && { backgroundColor: "#FFD60020" }]}
+          >
+            <Ionicons name="color-fill-outline" size={20} color={highlights.has(currentPage) ? "#F59E0B" : modeStyle.fg} />
+          </Pressable>
+          <Pressable
+            onPress={() => setShowNoteInput(!showNoteInput)}
+            style={[styles.toolBtn, showNoteInput && { backgroundColor: colors.primary + "20" }]}
+          >
+            <Ionicons name="create-outline" size={20} color={showNoteInput ? colors.primary : modeStyle.fg} />
+          </Pressable>
+          <Pressable
+            onPress={() => Alert.alert("Search", "Full-text search requires OCR text layer.")}
+            style={styles.toolBtn}
+          >
+            <Ionicons name="search-outline" size={20} color={modeStyle.fg} />
+          </Pressable>
+        </View>
+
+        {/* Page navigation */}
+        <View style={styles.navRow}>
+          <Pressable
+            onPress={goPrev}
+            disabled={currentPage <= 1}
+            style={[styles.navBtn, { backgroundColor: currentPage <= 1 ? modeStyle.fg + "15" : colors.primary }]}
+          >
+            <Ionicons name="chevron-back" size={20} color={currentPage <= 1 ? modeStyle.fg + "50" : "#fff"} />
+          </Pressable>
+
+          <View style={styles.pageNumWrap}>
+            <Text style={[styles.pageNum, { color: modeStyle.fg }]}>
+              {currentPage} <Text style={{ opacity: 0.5 }}>/ {totalPages}</Text>
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={goNext}
+            disabled={currentPage >= totalPages}
+            style={[styles.navBtn, { backgroundColor: currentPage >= totalPages ? modeStyle.fg + "15" : colors.primary }]}
+          >
+            <Ionicons name="chevron-forward" size={20} color={currentPage >= totalPages ? modeStyle.fg + "50" : "#fff"} />
+          </Pressable>
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topBar: {
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    zIndex: 10,
+  },
+  topBarInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: 4,
+  },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topBarCenter: {
+    flex: 1,
+    alignItems: "center",
+  },
+  bookTitleSmall: {
+    fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  pageCounter: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+  topBarActions: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  progressStrip: {
+    height: 2,
+  },
+  progressFill: {
+    height: 2,
+  },
+  watermark: {
+    position: "absolute",
+    bottom: 120,
+    right: 20,
+    opacity: 0.05,
+    pointerEvents: "none" as any,
+  },
+  watermarkText: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    transform: [{ rotate: "-30deg" }],
+    color: "#000",
+  },
+  pageContent: {
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  pageHeading: {
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+    lineHeight: 32,
+    marginBottom: 4,
+  },
+  pageText: {
+    fontFamily: "Inter_400Regular",
+    lineHeight: 26,
+  },
+  pageBullet: {
+    fontFamily: "Inter_400Regular",
+    lineHeight: 24,
+    paddingLeft: 8,
+  },
+  pageFormula: {
+    fontFamily: "Inter_500Medium",
+    fontWeight: "500",
+    lineHeight: 22,
+    letterSpacing: 0.5,
+  },
+  noteBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    marginTop: 8,
+  },
+  noteText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 18,
+  },
+  modeMenu: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    margin: 8,
+    marginTop: 4,
+    gap: 12,
+  },
+  modeMenuTitle: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  modeRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  modeBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+  modeBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+  },
+  fontSizeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  fontSizeBtns: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  fontBtn: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fontBtnText: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+  },
+  fontSizeValue: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    fontWeight: "700",
+    minWidth: 28,
+    textAlign: "center",
+  },
+  tocPanel: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    margin: 8,
+    marginTop: 4,
+    gap: 4,
+    maxHeight: 240,
+  },
+  tocItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  tocText: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    fontWeight: "500",
+    flex: 1,
+  },
+  tocPage: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  noteInputWrap: {
+    borderTopWidth: 1,
+    padding: 16,
+    gap: 8,
+  },
+  noteInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    minHeight: 80,
+    textAlignVertical: "top",
+  },
+  noteInputActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+  },
+  noteCancelBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  noteSaveBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  noteSaveBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+  },
+  bottomBar: {
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 10,
+  },
+  toolRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  },
+  toolBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  navBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageNumWrap: {
+    flex: 1,
+    alignItems: "center",
+  },
+  pageNum: {
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+  },
+});

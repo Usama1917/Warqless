@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCard } from "@/components/BookCard";
 import { CategoryChip } from "@/components/CategoryChip";
 import { EmptyState } from "@/components/EmptyState";
+import { useLanguage } from "@/context/LanguageContext";
 import { BOOK_TYPES, BOOKS, GRADES, SUBJECTS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
@@ -23,6 +24,7 @@ export default function BrowseScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ grade?: string; subject?: string }>();
+  const { t, isRTL } = useLanguage();
 
   const [query, setQuery] = useState("");
   const [selectedGrade, setSelectedGrade] = useState<string>(params.grade ?? "");
@@ -55,18 +57,52 @@ export default function BrowseScreen() {
   const hasFilters = selectedGrade || selectedSubject || selectedType;
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
+  const bookCountLabel =
+    filtered.length === 1
+      ? `1 ${t.browse.book}`
+      : `${filtered.length} ${t.browse.books}`;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Browse Books</Text>
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: topPad + 8,
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: colors.foreground },
+            isRTL && styles.rtlText,
+          ]}
+        >
+          {t.browse.title}
+        </Text>
 
         {/* Search bar */}
-        <View style={[styles.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
+          ]}
+        >
           <Ionicons name="search" size={18} color={colors.mutedForeground} />
           <TextInput
-            style={[styles.searchInput, { color: colors.foreground }]}
-            placeholder="Search books, subjects, publishers..."
+            style={[
+              styles.searchInput,
+              { color: colors.foreground, textAlign: isRTL ? "right" : "left" },
+            ]}
+            placeholder={t.browse.searchPlaceholder}
             placeholderTextColor={colors.mutedForeground}
             value={query}
             onChangeText={setQuery}
@@ -80,7 +116,7 @@ export default function BrowseScreen() {
         </View>
 
         {/* Filter toggle */}
-        <View style={styles.filterRow}>
+        <View style={[styles.filterRow, isRTL && styles.rtlRow]}>
           <Pressable
             onPress={() => setShowFilters(!showFilters)}
             style={[
@@ -88,23 +124,31 @@ export default function BrowseScreen() {
               {
                 backgroundColor: showFilters ? colors.primary : colors.secondary,
                 borderColor: showFilters ? colors.primary : colors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
           >
             <Ionicons name="options" size={16} color={showFilters ? "#fff" : colors.foreground} />
-            <Text style={[styles.filterToggleText, { color: showFilters ? "#fff" : colors.foreground }]}>
-              Filters
+            <Text
+              style={[styles.filterToggleText, { color: showFilters ? "#fff" : colors.foreground }]}
+            >
+              {t.browse.filters}
             </Text>
             {hasFilters && (
-              <View style={[styles.filterDot, { backgroundColor: showFilters ? "#fff" : colors.accent }]} />
+              <View
+                style={[
+                  styles.filterDot,
+                  { backgroundColor: showFilters ? "#fff" : colors.accent },
+                ]}
+              />
             )}
           </Pressable>
-          <Text style={[styles.resultCount, { color: colors.mutedForeground }]}>
-            {filtered.length} {filtered.length === 1 ? "book" : "books"}
+          <Text style={[styles.resultCount, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+            {bookCountLabel}
           </Text>
           {hasFilters && (
             <Pressable onPress={clearAll}>
-              <Text style={[styles.clearText, { color: colors.primary }]}>Clear all</Text>
+              <Text style={[styles.clearText, { color: colors.primary }]}>{t.browse.clearAll}</Text>
             </Pressable>
           )}
         </View>
@@ -112,9 +156,20 @@ export default function BrowseScreen() {
         {/* Filters panel */}
         {showFilters && (
           <View style={styles.filtersPanel}>
-            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Grade</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              <CategoryChip label="All" selected={!selectedGrade} onPress={() => setSelectedGrade("")} small />
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+              {t.browse.grade}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              <CategoryChip
+                label={t.browse.all}
+                selected={!selectedGrade}
+                onPress={() => setSelectedGrade("")}
+                small
+              />
               {GRADES.map((g) => (
                 <CategoryChip
                   key={g}
@@ -126,9 +181,20 @@ export default function BrowseScreen() {
               ))}
             </ScrollView>
 
-            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Subject</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              <CategoryChip label="All" selected={!selectedSubject} onPress={() => setSelectedSubject("")} small />
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+              {t.browse.subject}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              <CategoryChip
+                label={t.browse.all}
+                selected={!selectedSubject}
+                onPress={() => setSelectedSubject("")}
+                small
+              />
               {SUBJECTS.slice(0, 6).map((s) => (
                 <CategoryChip
                   key={s}
@@ -140,15 +206,26 @@ export default function BrowseScreen() {
               ))}
             </ScrollView>
 
-            <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>Book Type</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              <CategoryChip label="All" selected={!selectedType} onPress={() => setSelectedType("")} small />
-              {BOOK_TYPES.map((t) => (
+            <Text style={[styles.filterLabel, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+              {t.browse.bookType}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+            >
+              <CategoryChip
+                label={t.browse.all}
+                selected={!selectedType}
+                onPress={() => setSelectedType("")}
+                small
+              />
+              {BOOK_TYPES.map((bt) => (
                 <CategoryChip
-                  key={t.value}
-                  label={t.label}
-                  selected={selectedType === t.value}
-                  onPress={() => setSelectedType(selectedType === t.value ? "" : t.value)}
+                  key={bt.value}
+                  label={t.bookTypes[bt.value]}
+                  selected={selectedType === bt.value}
+                  onPress={() => setSelectedType(selectedType === bt.value ? "" : bt.value)}
                   small
                 />
               ))}
@@ -161,8 +238,8 @@ export default function BrowseScreen() {
       {filtered.length === 0 ? (
         <EmptyState
           icon="search"
-          title="No books found"
-          description="Try adjusting your filters or search with different keywords."
+          title={t.browse.noBooks}
+          description={t.browse.noBooksDesc}
         />
       ) : (
         <FlatList
@@ -194,7 +271,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   searchBar: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 14,
@@ -214,8 +290,10 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 8,
   },
+  rtlRow: {
+    flexDirection: "row-reverse",
+  },
   filterToggle: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingHorizontal: 14,
@@ -261,5 +339,9 @@ const styles = StyleSheet.create({
   },
   grid: {
     padding: 11,
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

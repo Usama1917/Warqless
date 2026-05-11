@@ -7,30 +7,32 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
+import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
 function NativeTabLayout() {
+  const { t } = useLanguage();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Label>{t.tabs.home}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="browse">
         <Icon sf={{ default: "magnifyingglass", selected: "magnifyingglass" }} />
-        <Label>Browse</Label>
+        <Label>{t.tabs.browse}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="library">
         <Icon sf={{ default: "books.vertical", selected: "books.vertical.fill" }} />
-        <Label>Library</Label>
+        <Label>{t.tabs.library}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="borrowed">
         <Icon sf={{ default: "arrow.left.arrow.right", selected: "arrow.left.arrow.right" }} />
-        <Label>Borrowed</Label>
+        <Label>{t.tabs.borrowed}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="account">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>Account</Label>
+        <Label>{t.tabs.account}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -39,6 +41,7 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
+  const { t } = useLanguage();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
@@ -83,7 +86,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t.tabs.home,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name={focused ? "house.fill" : "house"} tintColor={color} size={24} />
@@ -95,7 +98,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="browse"
         options={{
-          title: "Browse",
+          title: t.tabs.browse,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name="magnifyingglass" tintColor={color} size={24} />
@@ -107,7 +110,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="library"
         options={{
-          title: "Library",
+          title: t.tabs.library,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name={focused ? "books.vertical.fill" : "books.vertical"} tintColor={color} size={24} />
@@ -119,7 +122,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="borrowed"
         options={{
-          title: "Borrowed",
+          title: t.tabs.borrowed,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name="arrow.left.arrow.right" tintColor={color} size={24} />
@@ -131,7 +134,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="account"
         options={{
-          title: "Account",
+          title: t.tabs.account,
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
               <SymbolView name={focused ? "person.fill" : "person"} tintColor={color} size={24} />

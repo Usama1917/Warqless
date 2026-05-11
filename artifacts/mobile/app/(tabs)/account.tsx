@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   Alert,
   Platform,
@@ -14,7 +14,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
+import type { Language } from "@/i18n";
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -27,32 +29,98 @@ interface MenuItemProps {
 
 function MenuItem({ icon, label, value, onPress, danger = false, rightElement }: MenuItemProps) {
   const colors = useColors();
+  const { isRTL } = useLanguage();
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.menuItem,
-        { backgroundColor: pressed ? colors.muted : colors.card, borderBottomColor: colors.border },
+        {
+          backgroundColor: pressed ? colors.muted : colors.card,
+          borderBottomColor: colors.border,
+          flexDirection: isRTL ? "row-reverse" : "row",
+        },
       ]}
     >
-      <View style={[styles.menuIconWrap, { backgroundColor: danger ? colors.destructive + "15" : colors.secondary }]}>
+      <View
+        style={[
+          styles.menuIconWrap,
+          { backgroundColor: danger ? colors.destructive + "15" : colors.secondary },
+        ]}
+      >
         <Ionicons name={icon} size={18} color={danger ? colors.destructive : colors.primary} />
       </View>
       <View style={styles.menuContent}>
-        <Text style={[styles.menuLabel, { color: danger ? colors.destructive : colors.foreground }]}>
+        <Text
+          style={[
+            styles.menuLabel,
+            { color: danger ? colors.destructive : colors.foreground },
+            isRTL && styles.rtlText,
+          ]}
+        >
           {label}
         </Text>
-        {value && <Text style={[styles.menuValue, { color: colors.mutedForeground }]}>{value}</Text>}
+        {value && (
+          <Text style={[styles.menuValue, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+            {value}
+          </Text>
+        )}
       </View>
-      {rightElement ?? <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />}
+      {rightElement ?? (
+        <Ionicons
+          name={isRTL ? "chevron-back" : "chevron-forward"}
+          size={16}
+          color={colors.mutedForeground}
+        />
+      )}
     </Pressable>
   );
 }
 
 function SectionTitle({ title }: { title: string }) {
   const colors = useColors();
+  const { isRTL } = useLanguage();
   return (
-    <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{title}</Text>
+    <Text style={[styles.sectionTitle, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+      {title}
+    </Text>
+  );
+}
+
+function LanguageSwitcher() {
+  const colors = useColors();
+  const { language, setLanguage, t, isRTL } = useLanguage();
+
+  const options: { label: string; value: Language }[] = [
+    { label: "English", value: "en" },
+    { label: "العربية", value: "ar" },
+  ];
+
+  return (
+    <View style={[styles.langRow, isRTL && styles.rtlRow]}>
+      {options.map((opt) => (
+        <Pressable
+          key={opt.value}
+          onPress={() => setLanguage(opt.value)}
+          style={[
+            styles.langBtn,
+            {
+              backgroundColor: language === opt.value ? colors.primary : colors.secondary,
+              borderColor: language === opt.value ? colors.primary : colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.langBtnText,
+              { color: language === opt.value ? "#fff" : colors.foreground },
+            ]}
+          >
+            {opt.label}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
@@ -61,6 +129,7 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isAuthenticated, logout, purchasedBooks } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -69,23 +138,23 @@ export default function AccountScreen() {
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
         <EmptyState
           icon="person-outline"
-          title="No account yet"
-          description="Sign in or create a free account to manage your library, devices, and purchases."
+          title={t.account.signInTitle}
+          description={t.account.signInDesc}
         />
         <Pressable
           onPress={() => router.push("/auth")}
           style={[styles.signInBtn, { backgroundColor: colors.primary }]}
         >
-          <Text style={styles.signInText}>Sign In / Sign Up</Text>
+          <Text style={styles.signInText}>{t.account.signInBtn}</Text>
         </Pressable>
       </View>
     );
   }
 
   const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: logout },
+    Alert.alert(t.account.signOutTitle, t.account.signOutConfirm, [
+      { text: t.account.cancel, style: "cancel" },
+      { text: t.account.signOut, style: "destructive", onPress: logout },
     ]);
   };
 
@@ -98,7 +167,9 @@ export default function AccountScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Header */}
-      <View style={[styles.profileHeader, { paddingTop: topPad + 20, backgroundColor: colors.primary }]}>
+      <View
+        style={[styles.profileHeader, { paddingTop: topPad + 20, backgroundColor: colors.primary }]}
+      >
         <View style={styles.avatarWrap}>
           <View style={[styles.avatar, { backgroundColor: colors.accent }]}>
             <Text style={styles.avatarLetter}>{user?.name?.charAt(0)?.toUpperCase()}</Text>
@@ -109,40 +180,68 @@ export default function AccountScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{purchasedBooks.length}</Text>
-            <Text style={styles.statLabel}>Books</Text>
+            <Text style={styles.statLabel}>{t.account.books}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.3)" }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{purchasedBooks.filter((b) => b.progress === 100).length}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statNumber}>
+              {purchasedBooks.filter((b) => b.progress === 100).length}
+            </Text>
+            <Text style={styles.statLabel}>{t.account.completed}</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: "rgba(255,255,255,0.3)" }]} />
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{user?.devicesCount}</Text>
-            <Text style={styles.statLabel}>Devices</Text>
+            <Text style={styles.statLabel}>{t.account.devices}</Text>
           </View>
         </View>
       </View>
 
-      {/* Menu sections */}
+      {/* Language */}
       <View style={styles.section}>
-        <SectionTitle title="ACCOUNT" />
+        <SectionTitle title={t.account.sectionPreferences} />
+        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.menuItem,
+              {
+                borderBottomColor: colors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
+            ]}
+          >
+            <View style={[styles.menuIconWrap, { backgroundColor: colors.secondary }]}>
+              <Ionicons name="language-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={[styles.menuLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                {t.account.language}
+              </Text>
+            </View>
+            <LanguageSwitcher />
+          </View>
+        </View>
+      </View>
+
+      {/* Account */}
+      <View style={styles.section}>
+        <SectionTitle title={t.account.sectionAccount} />
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <MenuItem
             icon="person-outline"
-            label="Personal Information"
+            label={t.account.personalInfo}
             value={user?.name}
             onPress={() => {}}
           />
           <MenuItem
             icon="call-outline"
-            label="Phone Number"
+            label={t.account.phoneNumber}
             value={user?.phone}
             onPress={() => {}}
           />
           <MenuItem
             icon="school-outline"
-            label="Grade"
+            label={t.account.grade}
             value={user?.grade}
             onPress={() => {}}
           />
@@ -150,67 +249,55 @@ export default function AccountScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionTitle title="LIBRARY & PURCHASES" />
+        <SectionTitle title={t.account.sectionLibrary} />
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <MenuItem
             icon="receipt-outline"
-            label="Purchase History"
-            value={`${purchasedBooks.length} orders`}
+            label={t.account.purchaseHistory}
+            value={`${purchasedBooks.length} ${t.account.orders}`}
             onPress={() => {}}
           />
           <MenuItem
             icon="phone-portrait-outline"
-            label="Linked Devices"
+            label={t.account.linkedDevices}
             value={`${user?.devicesCount} of 2`}
             onPress={() => {}}
           />
-          <MenuItem
-            icon="pricetag-outline"
-            label="My Coupons"
-            onPress={() => {}}
-          />
+          <MenuItem icon="pricetag-outline" label={t.account.coupons} onPress={() => {}} />
         </View>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle title="SECURITY" />
+        <SectionTitle title={t.account.sectionSecurity} />
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <MenuItem
             icon="lock-closed-outline"
-            label="Change Password"
+            label={t.account.changePassword}
             onPress={() => {}}
           />
           <MenuItem
             icon="shield-checkmark-outline"
-            label="Two-Factor Authentication"
+            label={t.account.twoFactor}
             onPress={() => {}}
           />
         </View>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle title="SUPPORT" />
+        <SectionTitle title={t.account.sectionSupport} />
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MenuItem
-            icon="help-circle-outline"
-            label="Help Center"
-            onPress={() => {}}
-          />
+          <MenuItem icon="help-circle-outline" label={t.account.helpCenter} onPress={() => {}} />
           <MenuItem
             icon="chatbubble-outline"
-            label="Contact Support"
+            label={t.account.contactSupport}
             onPress={() => {}}
           />
           <MenuItem
             icon="document-text-outline"
-            label="Terms of Service"
+            label={t.account.terms}
             onPress={() => {}}
           />
-          <MenuItem
-            icon="shield-outline"
-            label="Privacy Policy"
-            onPress={() => {}}
-          />
+          <MenuItem icon="shield-outline" label={t.account.privacy} onPress={() => {}} />
         </View>
       </View>
 
@@ -218,16 +305,14 @@ export default function AccountScreen() {
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <MenuItem
             icon="log-out-outline"
-            label="Sign Out"
+            label={t.account.signOut}
             onPress={handleLogout}
             danger
           />
         </View>
       </View>
 
-      <Text style={[styles.version, { color: colors.mutedForeground }]}>
-        Warqless v1.0.0 · Your books. No paper.
-      </Text>
+      <Text style={[styles.version, { color: colors.mutedForeground }]}>{t.account.version}</Text>
     </ScrollView>
   );
 }
@@ -317,7 +402,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   menuItem: {
-    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -344,6 +428,24 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginTop: 1,
   },
+  langRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  rtlRow: {
+    flexDirection: "row-reverse",
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  langBtnText: {
+    fontSize: 12,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+  },
   signInBtn: {
     marginHorizontal: 32,
     marginTop: 8,
@@ -363,5 +465,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginTop: 20,
     marginBottom: 8,
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

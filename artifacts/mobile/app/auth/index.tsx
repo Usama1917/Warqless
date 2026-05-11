@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
 export default function AuthScreen() {
@@ -23,6 +23,7 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { login, register } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
@@ -36,7 +37,7 @@ export default function AuthScreen() {
   const handleSubmit = async () => {
     setError("");
     if (!email || !password) {
-      setError("Please fill in all fields.");
+      setError(t.auth.fillAll);
       return;
     }
     setLoading(true);
@@ -46,7 +47,7 @@ export default function AuthScreen() {
         ok = await login(email, password);
       } else {
         if (!name || !phone) {
-          setError("Please fill in all fields.");
+          setError(t.auth.fillAll);
           setLoading(false);
           return;
         }
@@ -55,10 +56,10 @@ export default function AuthScreen() {
       if (ok) {
         router.replace("/(tabs)");
       } else {
-        setError("Invalid email or password. Please try again.");
+        setError(t.auth.invalidCredentials);
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError(t.auth.error);
     }
     setLoading(false);
   };
@@ -81,16 +82,21 @@ export default function AuthScreen() {
           <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
             <Ionicons name="library" size={32} color="#fff" />
           </View>
-          <Text style={[styles.logoText, { color: colors.foreground }]}>
-            Warqless
-          </Text>
-          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>
-            Your books. No paper.
-          </Text>
+          <Text style={[styles.logoText, { color: colors.foreground }]}>Warqless</Text>
+          <Text style={[styles.tagline, { color: colors.mutedForeground }]}>{t.auth.tagline}</Text>
         </View>
 
         {/* Tab switcher */}
-        <View style={[styles.tabRow, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.tabRow,
+            {
+              backgroundColor: colors.secondary,
+              borderColor: colors.border,
+              flexDirection: isRTL ? "row-reverse" : "row",
+            },
+          ]}
+        >
           {(["login", "register"] as const).map((m) => (
             <Pressable
               key={m}
@@ -98,7 +104,10 @@ export default function AuthScreen() {
                 styles.tabBtn,
                 mode === m && [styles.tabBtnActive, { backgroundColor: colors.primary }],
               ]}
-              onPress={() => { setMode(m); setError(""); }}
+              onPress={() => {
+                setMode(m);
+                setError("");
+              }}
             >
               <Text
                 style={[
@@ -106,7 +115,7 @@ export default function AuthScreen() {
                   { color: mode === m ? "#fff" : colors.mutedForeground },
                 ]}
               >
-                {m === "login" ? "Sign In" : "Sign Up"}
+                {m === "login" ? t.auth.signIn : t.auth.signUp}
               </Text>
             </Pressable>
           ))}
@@ -116,10 +125,20 @@ export default function AuthScreen() {
         <View style={styles.form}>
           {mode === "register" && (
             <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Full Name</Text>
+              <Text style={[styles.fieldLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                {t.auth.fullName}
+              </Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                placeholder="Your full name"
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                    textAlign: isRTL ? "right" : "left",
+                  },
+                ]}
+                placeholder={t.auth.fullNamePlaceholder}
                 placeholderTextColor={colors.mutedForeground}
                 value={name}
                 onChangeText={setName}
@@ -129,10 +148,20 @@ export default function AuthScreen() {
           )}
 
           <View style={styles.fieldWrap}>
-            <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Email</Text>
+            <Text style={[styles.fieldLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+              {t.auth.email}
+            </Text>
             <TextInput
-              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-              placeholder="your@email.com"
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  color: colors.foreground,
+                  textAlign: "left",
+                },
+              ]}
+              placeholder={t.auth.emailPlaceholder}
               placeholderTextColor={colors.mutedForeground}
               value={email}
               onChangeText={setEmail}
@@ -143,10 +172,20 @@ export default function AuthScreen() {
 
           {mode === "register" && (
             <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Phone Number</Text>
+              <Text style={[styles.fieldLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                {t.auth.phone}
+              </Text>
               <TextInput
-                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-                placeholder="+20 1XX XXX XXXX"
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                    textAlign: "left",
+                  },
+                ]}
+                placeholder={t.auth.phonePlaceholder}
                 placeholderTextColor={colors.mutedForeground}
                 value={phone}
                 onChangeText={setPhone}
@@ -156,11 +195,25 @@ export default function AuthScreen() {
           )}
 
           <View style={styles.fieldWrap}>
-            <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Password</Text>
-            <View style={[styles.passwordWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.fieldLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+              {t.auth.password}
+            </Text>
+            <View
+              style={[
+                styles.passwordWrap,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
+              ]}
+            >
               <TextInput
-                style={[styles.passwordInput, { color: colors.foreground }]}
-                placeholder="Enter your password"
+                style={[
+                  styles.passwordInput,
+                  { color: colors.foreground, textAlign: isRTL ? "right" : "left" },
+                ]}
+                placeholder={t.auth.passwordPlaceholder}
                 placeholderTextColor={colors.mutedForeground}
                 value={password}
                 onChangeText={setPassword}
@@ -177,9 +230,20 @@ export default function AuthScreen() {
           </View>
 
           {error !== "" && (
-            <View style={[styles.errorBox, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "40" }]}>
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: colors.destructive + "15",
+                  borderColor: colors.destructive + "40",
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
+              ]}
+            >
               <Ionicons name="alert-circle" size={16} color={colors.destructive} />
-              <Text style={[styles.errorText, { color: colors.destructive }]}>{error}</Text>
+              <Text style={[styles.errorText, { color: colors.destructive }, isRTL && styles.rtlText]}>
+                {error}
+              </Text>
             </View>
           )}
 
@@ -195,22 +259,25 @@ export default function AuthScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <Text style={styles.submitText}>
-                {mode === "login" ? "Sign In" : "Create Account"}
+                {mode === "login" ? t.auth.signIn : t.auth.createAccount}
               </Text>
             )}
           </Pressable>
 
           {mode === "login" && (
             <Pressable style={styles.forgotBtn}>
-              <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot password?</Text>
+              <Text style={[styles.forgotText, { color: colors.primary }]}>
+                {t.auth.forgotPassword}
+              </Text>
             </Pressable>
           )}
         </View>
 
         <Text style={[styles.terms, { color: colors.mutedForeground }]}>
-          By continuing, you agree to Warqless's{" "}
-          <Text style={{ color: colors.primary }}>Terms of Service</Text> and{" "}
-          <Text style={{ color: colors.primary }}>Privacy Policy</Text>
+          {t.auth.termsText}{" "}
+          <Text style={{ color: colors.primary }}>{t.auth.termsLink}</Text>{" "}
+          {t.auth.and}{" "}
+          <Text style={{ color: colors.primary }}>{t.auth.privacyLink}</Text>
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -245,7 +312,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tabRow: {
-    flexDirection: "row",
     borderRadius: 12,
     borderWidth: 1,
     padding: 4,
@@ -284,7 +350,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
   passwordWrap: {
-    flexDirection: "row",
     alignItems: "center",
     borderRadius: 12,
     borderWidth: 1,
@@ -300,7 +365,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   errorBox: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 8,
     padding: 12,
@@ -339,5 +403,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 18,
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

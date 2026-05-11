@@ -14,11 +14,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CategoryChip } from "@/components/CategoryChip";
 import { EmptyState } from "@/components/EmptyState";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
 function LibraryBookCard({ book }: { book: any }) {
   const colors = useColors();
   const router = useRouter();
+  const { t, isRTL } = useLanguage();
 
   return (
     <Pressable
@@ -29,13 +31,19 @@ function LibraryBookCard({ book }: { book: any }) {
         <Ionicons name="book" size={28} color={book.coverAccent} />
       </View>
       <View style={styles.info}>
-        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>
+        <Text
+          style={[styles.title, { color: colors.foreground }, isRTL && styles.rtlText]}
+          numberOfLines={2}
+        >
           {book.title}
         </Text>
-        <Text style={[styles.publisher, { color: colors.mutedForeground }]} numberOfLines={1}>
+        <Text
+          style={[styles.publisher, { color: colors.mutedForeground }, isRTL && styles.rtlText]}
+          numberOfLines={1}
+        >
           {book.publisher}
         </Text>
-        <View style={styles.metaRow}>
+        <View style={[styles.metaRow, isRTL && styles.rtlRow]}>
           <View style={[styles.tag, { backgroundColor: colors.secondary }]}>
             <Text style={[styles.tagText, { color: colors.primary }]}>{book.grade}</Text>
           </View>
@@ -45,14 +53,13 @@ function LibraryBookCard({ book }: { book: any }) {
         </View>
 
         {/* Progress */}
-        <View style={styles.progressRow}>
+        <View style={[styles.progressRow, isRTL && styles.rtlRow]}>
           <View style={[styles.progressBar, { backgroundColor: colors.muted }]}>
             <View
               style={[
                 styles.progressFill,
                 {
-                  backgroundColor:
-                    book.progress === 100 ? colors.success : colors.primary,
+                  backgroundColor: book.progress === 100 ? colors.success : colors.primary,
                   width: `${book.progress}%` as any,
                 },
               ]}
@@ -63,20 +70,27 @@ function LibraryBookCard({ book }: { book: any }) {
           </Text>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={[styles.pageInfo, { color: colors.mutedForeground }]}>
-            Page {book.lastPage} of {book.pages}
+        <View style={[styles.footer, isRTL && styles.rtlRow]}>
+          <Text style={[styles.pageInfo, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+            {t.library.page} {book.lastPage} {t.library.of} {book.pages}
           </Text>
           {book.progress === 100 && (
             <View style={[styles.completeBadge, { backgroundColor: colors.success + "20" }]}>
               <Ionicons name="checkmark-circle" size={12} color={colors.success} />
-              <Text style={[styles.completeBadgeText, { color: colors.success }]}>Complete</Text>
+              <Text style={[styles.completeBadgeText, { color: colors.success }]}>
+                {t.library.complete}
+              </Text>
             </View>
           )}
         </View>
       </View>
       <View style={[styles.readBtn, { backgroundColor: colors.primary }]}>
-        <Ionicons name={book.progress === 100 ? "refresh" : "play"} size={16} color="#fff" />
+        <Ionicons
+          name={book.progress === 100 ? "refresh" : "play"}
+          size={16}
+          color="#fff"
+          style={book.progress !== 100 ? { transform: [{ scaleX: isRTL ? -1 : 1 }] } : undefined}
+        />
       </View>
     </Pressable>
   );
@@ -87,6 +101,7 @@ export default function LibraryScreen() {
   const insets = useSafeAreaInsets();
   const { purchasedBooks, isAuthenticated } = useApp();
   const router = useRouter();
+  const { t, isRTL } = useLanguage();
   const [filter, setFilter] = useState<"all" | "reading" | "completed">("all");
 
   const filtered = purchasedBooks.filter((b) => {
@@ -97,19 +112,24 @@ export default function LibraryScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
+  const bookCountLabel =
+    purchasedBooks.length === 1
+      ? `1 ${t.library.book}`
+      : `${purchasedBooks.length} ${t.library.books}`;
+
   if (!isAuthenticated) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
         <EmptyState
           icon="lock-closed"
-          title="Sign in to access your library"
-          description="Create an account or sign in to purchase and read books."
+          title={t.library.signInTitle}
+          description={t.library.signInDesc}
         />
         <Pressable
           onPress={() => router.push("/auth")}
           style={[styles.signInBtn, { backgroundColor: colors.primary }]}
         >
-          <Text style={styles.signInText}>Sign In</Text>
+          <Text style={styles.signInText}>{t.library.signIn}</Text>
         </Pressable>
       </View>
     );
@@ -123,16 +143,24 @@ export default function LibraryScreen() {
           { paddingTop: topPad + 8, borderBottomColor: colors.border, backgroundColor: colors.background },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>My Library</Text>
-        <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-          {purchasedBooks.length} {purchasedBooks.length === 1 ? "book" : "books"}
+        <Text style={[styles.headerTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+          {t.library.title}
+        </Text>
+        <Text style={[styles.headerSub, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+          {bookCountLabel}
         </Text>
 
-        <View style={styles.filterRow}>
+        <View style={[styles.filterRow, isRTL && styles.rtlRow]}>
           {(["all", "reading", "completed"] as const).map((f) => (
             <CategoryChip
               key={f}
-              label={f === "all" ? "All" : f === "reading" ? "In Progress" : "Completed"}
+              label={
+                f === "all"
+                  ? t.library.all
+                  : f === "reading"
+                  ? t.library.inProgress
+                  : t.library.completed
+              }
               selected={filter === f}
               onPress={() => setFilter(f)}
               small
@@ -144,13 +172,19 @@ export default function LibraryScreen() {
       {filtered.length === 0 ? (
         <EmptyState
           icon="book-outline"
-          title={filter === "all" ? "Your library is empty" : "No books here yet"}
+          title={
+            filter === "all"
+              ? t.library.emptyAll
+              : filter === "reading"
+              ? t.library.emptyReading
+              : t.library.emptyCompleted
+          }
           description={
             filter === "all"
-              ? "Browse the store and purchase your first book to start reading."
+              ? t.library.emptyAllDesc
               : filter === "reading"
-              ? "Start reading a book to see it here."
-              : "Finish a book to see it here."
+              ? t.library.emptyReadingDesc
+              : t.library.emptyCompletedDesc
           }
         />
       ) : (
@@ -188,6 +222,9 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: "row",
+  },
+  rtlRow: {
+    flexDirection: "row-reverse",
   },
   list: {
     padding: 16,
@@ -304,5 +341,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

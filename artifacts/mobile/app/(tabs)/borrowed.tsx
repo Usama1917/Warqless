@@ -14,12 +14,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { EmptyState } from "@/components/EmptyState";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
 function BorrowedBookCard({ book }: { book: any }) {
   const colors = useColors();
   const router = useRouter();
   const { returnBorrowedBook } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const returnDate = new Date(book.returnDate);
   const today = new Date();
@@ -30,15 +32,28 @@ function BorrowedBookCard({ book }: { book: any }) {
   const isUrgent = daysLeft <= 2 && !isExpired;
 
   const handleReturn = () => {
-    Alert.alert("Return Book", `Are you sure you want to return "${book.title}" to ${book.ownerName}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Return",
-        style: "destructive",
-        onPress: () => returnBorrowedBook(book.id),
-      },
-    ]);
+    Alert.alert(
+      t.borrowed.returnTitle,
+      `${t.borrowed.returnConfirm} "${book.title}" ${t.borrowed.returnTo} ${book.ownerName}?`,
+      [
+        { text: t.borrowed.cancel, style: "cancel" },
+        {
+          text: t.borrowed.return,
+          style: "destructive",
+          onPress: () => returnBorrowedBook(book.id),
+        },
+      ]
+    );
   };
+
+  const statusText = isExpired
+    ? t.borrowed.expired
+    : isUrgent
+    ? `${daysLeft} ${daysLeft === 1 ? t.borrowed.daysLeft : t.borrowed.daysLeftPlural}`
+    : `${t.borrowed.returns} ${returnDate.toLocaleDateString(isRTL ? "ar-EG" : "en-US", {
+        month: "short",
+        day: "numeric",
+      })}`;
 
   return (
     <View
@@ -58,17 +73,20 @@ function BorrowedBookCard({ book }: { book: any }) {
         <Ionicons name="book" size={26} color={book.coverAccent} />
       </View>
       <View style={styles.info}>
-        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={2}>
+        <Text
+          style={[styles.title, { color: colors.foreground }, isRTL && styles.rtlText]}
+          numberOfLines={2}
+        >
           {book.title}
         </Text>
-        <Text style={[styles.publisher, { color: colors.mutedForeground }]}>
+        <Text style={[styles.publisher, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
           {book.publisher}
         </Text>
 
-        <View style={styles.ownerRow}>
+        <View style={[styles.ownerRow, isRTL && styles.rtlRow]}>
           <Ionicons name="person-outline" size={12} color={colors.mutedForeground} />
-          <Text style={[styles.ownerText, { color: colors.mutedForeground }]}>
-            Borrowed from {book.ownerName}
+          <Text style={[styles.ownerText, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+            {t.borrowed.borrowedFrom} {book.ownerName}
           </Text>
         </View>
 
@@ -81,6 +99,7 @@ function BorrowedBookCard({ book }: { book: any }) {
                 : isUrgent
                 ? colors.warning + "15"
                 : colors.success + "15",
+              alignSelf: isRTL ? "flex-end" : "flex-start",
             },
           ]}
         >
@@ -101,33 +120,35 @@ function BorrowedBookCard({ book }: { book: any }) {
               },
             ]}
           >
-            {isExpired
-              ? "Expired"
-              : isUrgent
-              ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left — return soon`
-              : `Returns ${returnDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+            {statusText}
           </Text>
         </View>
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, isRTL && styles.rtlRow]}>
           {!isExpired && (
             <Pressable
               onPress={() => router.push(`/reader/${book.id}`)}
-              style={[styles.readBtn, { backgroundColor: colors.primary }]}
+              style={[styles.readBtn, { backgroundColor: colors.primary, flexDirection: isRTL ? "row-reverse" : "row" }]}
             >
               <Ionicons name="book-outline" size={14} color="#fff" />
-              <Text style={styles.readBtnText}>Read</Text>
+              <Text style={styles.readBtnText}>{t.borrowed.read}</Text>
             </Pressable>
           )}
           <Pressable
             onPress={handleReturn}
             style={[
               styles.returnBtn,
-              { borderColor: colors.destructive, backgroundColor: colors.destructive + "10" },
+              {
+                borderColor: colors.destructive,
+                backgroundColor: colors.destructive + "10",
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
             ]}
           >
             <Ionicons name="return-up-back" size={14} color={colors.destructive} />
-            <Text style={[styles.returnBtnText, { color: colors.destructive }]}>Return</Text>
+            <Text style={[styles.returnBtnText, { color: colors.destructive }]}>
+              {t.borrowed.return}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -137,6 +158,7 @@ function BorrowedBookCard({ book }: { book: any }) {
 
 function LentOutCard({ book }: { book: any }) {
   const colors = useColors();
+  const { t, isRTL } = useLanguage();
 
   return (
     <View style={[styles.lentCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
@@ -144,18 +166,25 @@ function LentOutCard({ book }: { book: any }) {
         <Ionicons name="book" size={18} color={book.coverAccent} />
       </View>
       <View style={styles.info}>
-        <Text style={[styles.titleSmall, { color: colors.foreground }]} numberOfLines={1}>
+        <Text
+          style={[styles.titleSmall, { color: colors.foreground }, isRTL && styles.rtlText]}
+          numberOfLines={1}
+        >
           {book.title}
         </Text>
-        <Text style={[styles.lentTo, { color: colors.mutedForeground }]}>
-          Lent to {book.borrowerName}
+        <Text style={[styles.lentTo, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+          {t.borrowed.lentTo} {book.borrowerName}
         </Text>
-        <Text style={[styles.lentDate, { color: colors.mutedForeground }]}>
-          Returns {new Date(book.returnDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+        <Text style={[styles.lentDate, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+          {t.borrowed.returns}{" "}
+          {new Date(book.returnDate).toLocaleDateString(isRTL ? "ar-EG" : "en-US", {
+            month: "short",
+            day: "numeric",
+          })}
         </Text>
       </View>
       <View style={[styles.lentBadge, { backgroundColor: colors.warning + "20" }]}>
-        <Text style={[styles.lentBadgeText, { color: colors.warning }]}>Lent out</Text>
+        <Text style={[styles.lentBadgeText, { color: colors.warning }]}>{t.borrowed.lentOut}</Text>
       </View>
     </View>
   );
@@ -166,6 +195,7 @@ export default function BorrowedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { borrowedBooks, purchasedBooks, isAuthenticated } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const lentOut = purchasedBooks.filter((b) =>
     borrowedBooks.some((bb) => bb.id === b.id && bb.isLentOut)
@@ -178,14 +208,14 @@ export default function BorrowedScreen() {
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad }]}>
         <EmptyState
           icon="lock-closed"
-          title="Sign in to borrow books"
-          description="Create an account to borrow and lend books with friends."
+          title={t.borrowed.signInTitle}
+          description={t.borrowed.signInDesc}
         />
         <Pressable
           onPress={() => router.push("/auth")}
           style={[styles.signInBtn, { backgroundColor: colors.primary }]}
         >
-          <Text style={styles.signInText}>Sign In</Text>
+          <Text style={styles.signInText}>{t.borrowed.signIn}</Text>
         </Pressable>
       </View>
     );
@@ -196,12 +226,18 @@ export default function BorrowedScreen() {
       <View
         style={[
           styles.header,
-          { paddingTop: topPad + 8, borderBottomColor: colors.border, backgroundColor: colors.background },
+          {
+            paddingTop: topPad + 8,
+            borderBottomColor: colors.border,
+            backgroundColor: colors.background,
+          },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>Borrowed Books</Text>
-        <Text style={[styles.headerSub, { color: colors.mutedForeground }]}>
-          Books you&apos;ve borrowed from others
+        <Text style={[styles.headerTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+          {t.borrowed.title}
+        </Text>
+        <Text style={[styles.headerSub, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+          {t.borrowed.subtitle}
         </Text>
       </View>
 
@@ -215,15 +251,15 @@ export default function BorrowedScreen() {
         ListHeaderComponent={
           lentOut.length > 0 ? (
             <View style={styles.lentSection}>
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-                Books you lent out
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+                {t.borrowed.booksLentOut}
               </Text>
               {lentOut.map((b) => (
                 <LentOutCard key={b.id} book={b} />
               ))}
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-                Books you borrowed
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+                {t.borrowed.booksBorrowed}
               </Text>
             </View>
           ) : null
@@ -231,8 +267,8 @@ export default function BorrowedScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="swap-horizontal-outline"
-            title="No borrowed books"
-            description="You haven&apos;t borrowed any books yet. Ask a friend to lend you one, or lend from your own library."
+            title={t.borrowed.noBorrowed}
+            description={t.borrowed.noBorrowedDesc}
           />
         }
         renderItem={({ item }) => <BorrowedBookCard book={item} />}
@@ -246,12 +282,13 @@ export default function BorrowedScreen() {
             backgroundColor: colors.secondary,
             borderColor: colors.border,
             marginBottom: Platform.OS === "web" ? 34 : insets.bottom + 80,
+            flexDirection: isRTL ? "row-reverse" : "row",
           },
         ]}
       >
         <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-        <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-          When you lend a book, you cannot read it until the borrower returns it or the lending period expires.
+        <Text style={[styles.infoText, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+          {t.borrowed.infoText}
         </Text>
       </View>
     </View>
@@ -314,6 +351,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
+  rtlRow: {
+    flexDirection: "row-reverse",
+  },
   ownerText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
@@ -325,7 +365,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    alignSelf: "flex-start",
   },
   statusText: {
     fontSize: 11,
@@ -338,7 +377,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   readBtn: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
@@ -352,7 +390,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   returnBtn: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
@@ -420,7 +457,6 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   infoCard: {
-    flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
     margin: 16,
@@ -447,5 +483,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

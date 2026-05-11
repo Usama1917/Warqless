@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Platform,
   Pressable,
@@ -16,16 +15,16 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { BOOKS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
 type ReadingMode = "light" | "dark" | "sepia";
-type ActiveTool = "none" | "highlight" | "pen" | "note";
 
-const READING_MODES: { mode: ReadingMode; bg: string; fg: string; label: string }[] = [
-  { mode: "light", bg: "#FFFFFF", fg: "#1A1A1A", label: "Light" },
-  { mode: "sepia", bg: "#F9F0DC", fg: "#3B2A1A", label: "Sepia" },
-  { mode: "dark", bg: "#1A1A2E", fg: "#E8E8F0", label: "Dark" },
+const READING_MODE_CONFIGS: { mode: ReadingMode; bg: string; fg: string; labelKey: "lightMode" | "darkMode" | "sepiaMode" }[] = [
+  { mode: "light", bg: "#FFFFFF", fg: "#1A1A1A", labelKey: "lightMode" },
+  { mode: "sepia", bg: "#F9F0DC", fg: "#3B2A1A", labelKey: "sepiaMode" },
+  { mode: "dark", bg: "#1A1A2E", fg: "#E8E8F0", labelKey: "darkMode" },
 ];
 
 const SAMPLE_PAGES: string[][] = [
@@ -85,6 +84,7 @@ export default function ReaderScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { purchasedBooks, borrowedBooks, updateReadingProgress, toggleBookmark } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const book =
     purchasedBooks.find((b) => b.id === id) ??
@@ -97,7 +97,6 @@ export default function ReaderScreen() {
   const [readingMode, setReadingMode] = useState<ReadingMode>("light");
   const [showToolbar, setShowToolbar] = useState(true);
   const [showModeMenu, setShowModeMenu] = useState(false);
-  const [activeTool, setActiveTool] = useState<ActiveTool>("none");
   const [fontSize, setFontSize] = useState(16);
   const [noteText, setNoteText] = useState("");
   const [showNoteInput, setShowNoteInput] = useState(false);
@@ -111,7 +110,7 @@ export default function ReaderScreen() {
   const pageContent = SAMPLE_PAGES[pageIndex] ?? SAMPLE_PAGES[0];
   const isBookmarked = purchasedBook?.bookmarkedPages.includes(currentPage) ?? false;
 
-  const modeStyle = READING_MODES.find((m) => m.mode === readingMode) ?? READING_MODES[0];
+  const modeStyle = READING_MODE_CONFIGS.find((m) => m.mode === readingMode) ?? READING_MODE_CONFIGS[0];
 
   useEffect(() => {
     const progress = Math.round((currentPage / totalPages) * 100);
@@ -158,12 +157,14 @@ export default function ReaderScreen() {
       else next.add(currentPage);
       return next;
     });
-    setActiveTool("none");
   };
 
   const handleSaveNote = () => {
     if (noteText.trim()) {
-      setNotes((prev) => [...prev.filter((n) => n.page !== currentPage), { page: currentPage, text: noteText }]);
+      setNotes((prev) => [
+        ...prev.filter((n) => n.page !== currentPage),
+        { page: currentPage, text: noteText },
+      ]);
       setNoteText("");
       setShowNoteInput(false);
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -176,13 +177,16 @@ export default function ReaderScreen() {
   if (!book) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.foreground }}>Book not found or not purchased.</Text>
+        <Text style={{ color: colors.foreground }}>{t.common.error}</Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={{ color: colors.primary, marginTop: 12 }}>Go Back</Text>
+          <Text style={{ color: colors.primary, marginTop: 12 }}>{t.common.back}</Text>
         </Pressable>
       </View>
     );
   }
+
+  const prevIcon = isRTL ? "chevron-forward" : "chevron-back";
+  const nextIcon = isRTL ? "chevron-back" : "chevron-forward";
 
   return (
     <View style={[styles.container, { backgroundColor: modeStyle.bg }]}>
@@ -199,19 +203,22 @@ export default function ReaderScreen() {
         ]}
         pointerEvents={showToolbar ? "auto" : "none"}
       >
-        <View style={styles.topBarInner}>
+        <View style={[styles.topBarInner, isRTL && styles.rtlRow]}>
           <Pressable onPress={() => router.back()} style={styles.iconBtn}>
-            <Ionicons name="arrow-back" size={22} color={modeStyle.fg} />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={22} color={modeStyle.fg} />
           </Pressable>
           <View style={styles.topBarCenter}>
-            <Text style={[styles.bookTitleSmall, { color: modeStyle.fg }]} numberOfLines={1}>
+            <Text
+              style={[styles.bookTitleSmall, { color: modeStyle.fg }, isRTL && styles.rtlText]}
+              numberOfLines={1}
+            >
               {book.title}
             </Text>
             <Text style={[styles.pageCounter, { color: modeStyle.fg + "80" }]}>
-              Page {currentPage} of {totalPages}
+              {t.reader.page} {currentPage} {t.reader.of} {totalPages}
             </Text>
           </View>
-          <View style={styles.topBarActions}>
+          <View style={[styles.topBarActions, isRTL && styles.rtlRow]}>
             <Pressable
               onPress={() => setShowModeMenu(!showModeMenu)}
               style={styles.iconBtn}
@@ -226,30 +233,52 @@ export default function ReaderScreen() {
 
         {/* Mode menu */}
         {showModeMenu && (
-          <View style={[styles.modeMenu, { backgroundColor: modeStyle.bg, borderColor: modeStyle.fg + "20" }]}>
-            <Text style={[styles.modeMenuTitle, { color: modeStyle.fg + "80" }]}>Reading Mode</Text>
-            <View style={styles.modeRow}>
-              {READING_MODES.map((m) => (
+          <View
+            style={[
+              styles.modeMenu,
+              { backgroundColor: modeStyle.bg, borderColor: modeStyle.fg + "20" },
+            ]}
+          >
+            <Text style={[styles.modeMenuTitle, { color: modeStyle.fg + "80" }]}>
+              {t.reader.lightMode} / {t.reader.sepiaMode} / {t.reader.darkMode}
+            </Text>
+            <View style={[styles.modeRow, isRTL && styles.rtlRow]}>
+              {READING_MODE_CONFIGS.map((m) => (
                 <Pressable
                   key={m.mode}
-                  onPress={() => { setReadingMode(m.mode); setShowModeMenu(false); }}
+                  onPress={() => {
+                    setReadingMode(m.mode);
+                    setShowModeMenu(false);
+                  }}
                   style={[
                     styles.modeBtn,
-                    { backgroundColor: m.bg, borderColor: m === READING_MODES.find((rm) => rm.mode === readingMode) ? colors.primary : modeStyle.fg + "30" },
+                    {
+                      backgroundColor: m.bg,
+                      borderColor:
+                        m.mode === readingMode ? colors.primary : modeStyle.fg + "30",
+                    },
                   ]}
                 >
-                  <Text style={[styles.modeBtnText, { color: m.fg }]}>{m.label}</Text>
+                  <Text style={[styles.modeBtnText, { color: m.fg }]}>{t.reader[m.labelKey]}</Text>
                 </Pressable>
               ))}
             </View>
-            <View style={styles.fontSizeRow}>
-              <Text style={[styles.modeMenuTitle, { color: modeStyle.fg + "80" }]}>Font Size</Text>
-              <View style={styles.fontSizeBtns}>
-                <Pressable onPress={() => setFontSize((f) => Math.max(12, f - 1))} style={styles.fontBtn}>
+            <View style={[styles.fontSizeRow, isRTL && styles.rtlRow]}>
+              <Text style={[styles.modeMenuTitle, { color: modeStyle.fg + "80" }]}>
+                Font Size
+              </Text>
+              <View style={[styles.fontSizeBtns, isRTL && styles.rtlRow]}>
+                <Pressable
+                  onPress={() => setFontSize((f) => Math.max(12, f - 1))}
+                  style={styles.fontBtn}
+                >
                   <Text style={[styles.fontBtnText, { color: modeStyle.fg }]}>A-</Text>
                 </Pressable>
                 <Text style={[styles.fontSizeValue, { color: modeStyle.fg }]}>{fontSize}</Text>
-                <Pressable onPress={() => setFontSize((f) => Math.min(22, f + 1))} style={styles.fontBtn}>
+                <Pressable
+                  onPress={() => setFontSize((f) => Math.min(22, f + 1))}
+                  style={styles.fontBtn}
+                >
                   <Text style={[styles.fontBtnText, { color: modeStyle.fg }]}>A+</Text>
                 </Pressable>
               </View>
@@ -259,15 +288,39 @@ export default function ReaderScreen() {
 
         {/* TOC */}
         {showToc && (
-          <View style={[styles.tocPanel, { backgroundColor: modeStyle.bg, borderColor: modeStyle.fg + "20" }]}>
-            <Text style={[styles.modeMenuTitle, { color: modeStyle.fg }]}>Table of Contents</Text>
+          <View
+            style={[
+              styles.tocPanel,
+              { backgroundColor: modeStyle.bg, borderColor: modeStyle.fg + "20" },
+            ]}
+          >
+            <Text style={[styles.modeMenuTitle, { color: modeStyle.fg }]}>
+              {t.reader.tableOfContents}
+            </Text>
             {SAMPLE_PAGES.map((p, i) => (
               <Pressable
                 key={i}
-                onPress={() => { setCurrentPage(i + 1); setShowToc(false); }}
-                style={[styles.tocItem, { borderBottomColor: modeStyle.fg + "15" }]}
+                onPress={() => {
+                  setCurrentPage(i + 1);
+                  setShowToc(false);
+                }}
+                style={[
+                  styles.tocItem,
+                  {
+                    borderBottomColor: modeStyle.fg + "15",
+                    flexDirection: isRTL ? "row-reverse" : "row",
+                  },
+                ]}
               >
-                <Text style={[styles.tocText, { color: currentPage === i + 1 ? colors.primary : modeStyle.fg }]}>
+                <Text
+                  style={[
+                    styles.tocText,
+                    {
+                      color: currentPage === i + 1 ? colors.primary : modeStyle.fg,
+                    },
+                    isRTL && styles.rtlText,
+                  ]}
+                >
                   {p[0]}
                 </Text>
                 <Text style={[styles.tocPage, { color: modeStyle.fg + "60" }]}>p.{i + 1}</Text>
@@ -282,7 +335,10 @@ export default function ReaderScreen() {
         <View
           style={[
             styles.progressFill,
-            { backgroundColor: colors.primary, width: `${(currentPage / totalPages) * 100}%` as any },
+            {
+              backgroundColor: colors.primary,
+              width: `${(currentPage / totalPages) * 100}%` as any,
+            },
           ]}
         />
       </View>
@@ -295,7 +351,10 @@ export default function ReaderScreen() {
       {/* Page content */}
       <Pressable onPress={toggleToolbar} style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={[styles.pageContent, { paddingTop: 20, paddingBottom: botPad + 80 }]}
+          contentContainerStyle={[
+            styles.pageContent,
+            { paddingTop: 20, paddingBottom: botPad + 80 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {pageContent.map((para, i) => {
@@ -307,11 +366,19 @@ export default function ReaderScreen() {
                 key={i}
                 selectable={false}
                 style={[
-                  isHeading ? styles.pageHeading : isBullet ? styles.pageBullet : isFormula ? styles.pageFormula : styles.pageText,
+                  isHeading
+                    ? styles.pageHeading
+                    : isBullet
+                    ? styles.pageBullet
+                    : isFormula
+                    ? styles.pageFormula
+                    : styles.pageText,
                   {
                     color: modeStyle.fg,
                     fontSize: isHeading ? fontSize + 4 : isFormula ? fontSize - 1 : fontSize,
-                    backgroundColor: highlights.has(currentPage) && !isHeading ? "#FFDD0030" : "transparent",
+                    backgroundColor: highlights.has(currentPage) && !isHeading
+                      ? "#FFDD0030"
+                      : "transparent",
                   },
                 ]}
               >
@@ -321,36 +388,65 @@ export default function ReaderScreen() {
           })}
 
           {/* Notes for this page */}
-          {notes.filter((n) => n.page === currentPage).map((n, i) => (
-            <View
-              key={i}
-              style={[styles.noteBox, { backgroundColor: "#FFD60020", borderLeftColor: "#F59E0B" }]}
-            >
-              <Ionicons name="document-text" size={14} color="#F59E0B" />
-              <Text style={[styles.noteText, { color: modeStyle.fg }]}>{n.text}</Text>
-            </View>
-          ))}
+          {notes
+            .filter((n) => n.page === currentPage)
+            .map((n, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.noteBox,
+                  {
+                    backgroundColor: "#FFD60020",
+                    borderLeftColor: "#F59E0B",
+                    borderLeftWidth: isRTL ? 0 : 3,
+                    borderRightWidth: isRTL ? 3 : 0,
+                    borderRightColor: "#F59E0B",
+                    flexDirection: isRTL ? "row-reverse" : "row",
+                  },
+                ]}
+              >
+                <Ionicons name="document-text" size={14} color="#F59E0B" />
+                <Text style={[styles.noteText, { color: modeStyle.fg }, isRTL && styles.rtlText]}>
+                  {n.text}
+                </Text>
+              </View>
+            ))}
         </ScrollView>
       </Pressable>
 
       {/* Note input */}
       {showNoteInput && (
-        <View style={[styles.noteInputWrap, { backgroundColor: modeStyle.bg, borderTopColor: modeStyle.fg + "20" }]}>
+        <View
+          style={[
+            styles.noteInputWrap,
+            { backgroundColor: modeStyle.bg, borderTopColor: modeStyle.fg + "20" },
+          ]}
+        >
           <TextInput
-            style={[styles.noteInput, { color: modeStyle.fg, borderColor: modeStyle.fg + "30" }]}
-            placeholder="Add a note..."
+            style={[
+              styles.noteInput,
+              {
+                color: modeStyle.fg,
+                borderColor: modeStyle.fg + "30",
+                textAlign: isRTL ? "right" : "left",
+              },
+            ]}
+            placeholder={t.reader.notePlaceholder}
             placeholderTextColor={modeStyle.fg + "60"}
             value={noteText}
             onChangeText={setNoteText}
             multiline
             autoFocus
           />
-          <View style={styles.noteInputActions}>
+          <View style={[styles.noteInputActions, isRTL && styles.rtlRow]}>
             <Pressable onPress={() => setShowNoteInput(false)} style={styles.noteCancelBtn}>
-              <Text style={{ color: modeStyle.fg + "80" }}>Cancel</Text>
+              <Text style={{ color: modeStyle.fg + "80" }}>{t.reader.cancel}</Text>
             </Pressable>
-            <Pressable onPress={handleSaveNote} style={[styles.noteSaveBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.noteSaveBtnText}>Save Note</Text>
+            <Pressable
+              onPress={handleSaveNote}
+              style={[styles.noteSaveBtn, { backgroundColor: colors.primary }]}
+            >
+              <Text style={styles.noteSaveBtnText}>{t.reader.save}</Text>
             </Pressable>
           </View>
         </View>
@@ -382,33 +478,60 @@ export default function ReaderScreen() {
             />
           </Pressable>
           <Pressable
-            onPress={() => { setActiveTool(activeTool === "highlight" ? "none" : "highlight"); handleHighlight(); }}
-            style={[styles.toolBtn, highlights.has(currentPage) && { backgroundColor: "#FFD60020" }]}
+            onPress={handleHighlight}
+            style={[
+              styles.toolBtn,
+              highlights.has(currentPage) && { backgroundColor: "#FFD60020" },
+            ]}
           >
-            <Ionicons name="color-fill-outline" size={20} color={highlights.has(currentPage) ? "#F59E0B" : modeStyle.fg} />
+            <Ionicons
+              name="color-fill-outline"
+              size={20}
+              color={highlights.has(currentPage) ? "#F59E0B" : modeStyle.fg}
+            />
           </Pressable>
           <Pressable
             onPress={() => setShowNoteInput(!showNoteInput)}
-            style={[styles.toolBtn, showNoteInput && { backgroundColor: colors.primary + "20" }]}
+            style={[
+              styles.toolBtn,
+              showNoteInput && { backgroundColor: colors.primary + "20" },
+            ]}
           >
-            <Ionicons name="create-outline" size={20} color={showNoteInput ? colors.primary : modeStyle.fg} />
+            <Ionicons
+              name="create-outline"
+              size={20}
+              color={showNoteInput ? colors.primary : modeStyle.fg}
+            />
           </Pressable>
-          <Pressable
-            onPress={() => Alert.alert("Search", "Full-text search requires OCR text layer.")}
-            style={styles.toolBtn}
-          >
+          <Pressable style={styles.toolBtn}>
             <Ionicons name="search-outline" size={20} color={modeStyle.fg} />
           </Pressable>
         </View>
 
         {/* Page navigation */}
-        <View style={styles.navRow}>
+        <View style={[styles.navRow, isRTL && styles.rtlRow]}>
           <Pressable
-            onPress={goPrev}
-            disabled={currentPage <= 1}
-            style={[styles.navBtn, { backgroundColor: currentPage <= 1 ? modeStyle.fg + "15" : colors.primary }]}
+            onPress={isRTL ? goNext : goPrev}
+            disabled={isRTL ? currentPage >= totalPages : currentPage <= 1}
+            style={[
+              styles.navBtn,
+              {
+                backgroundColor:
+                  (isRTL ? currentPage >= totalPages : currentPage <= 1)
+                    ? modeStyle.fg + "15"
+                    : colors.primary,
+              },
+            ]}
           >
-            <Ionicons name="chevron-back" size={20} color={currentPage <= 1 ? modeStyle.fg + "50" : "#fff"} />
+            <Ionicons
+              name={prevIcon}
+              size={20}
+              color={
+                (isRTL ? currentPage >= totalPages : currentPage <= 1)
+                  ? modeStyle.fg + "50"
+                  : "#fff"
+              }
+            />
           </Pressable>
 
           <View style={styles.pageNumWrap}>
@@ -418,11 +541,27 @@ export default function ReaderScreen() {
           </View>
 
           <Pressable
-            onPress={goNext}
-            disabled={currentPage >= totalPages}
-            style={[styles.navBtn, { backgroundColor: currentPage >= totalPages ? modeStyle.fg + "15" : colors.primary }]}
+            onPress={isRTL ? goPrev : goNext}
+            disabled={isRTL ? currentPage <= 1 : currentPage >= totalPages}
+            style={[
+              styles.navBtn,
+              {
+                backgroundColor:
+                  (isRTL ? currentPage <= 1 : currentPage >= totalPages)
+                    ? modeStyle.fg + "15"
+                    : colors.primary,
+              },
+            ]}
           >
-            <Ionicons name="chevron-forward" size={20} color={currentPage >= totalPages ? modeStyle.fg + "50" : "#fff"} />
+            <Ionicons
+              name={nextIcon}
+              size={20}
+              color={
+                (isRTL ? currentPage <= 1 : currentPage >= totalPages)
+                  ? modeStyle.fg + "50"
+                  : "#fff"
+              }
+            />
           </Pressable>
         </View>
       </Animated.View>
@@ -448,6 +587,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingBottom: 4,
+  },
+  rtlRow: {
+    flexDirection: "row-reverse",
   },
   iconBtn: {
     width: 36,
@@ -517,12 +659,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   noteBox: {
-    flexDirection: "row",
     alignItems: "flex-start",
     gap: 8,
     padding: 10,
     borderRadius: 8,
-    borderLeftWidth: 3,
     marginTop: 8,
   },
   noteText: {
@@ -689,5 +829,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

@@ -17,10 +17,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCard } from "@/components/BookCard";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { BOOKS, FEATURED_OFFERS, GRADES, SUBJECTS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
 function OfferBanner({ offer }: { offer: (typeof FEATURED_OFFERS)[0] }) {
+  const { t, isRTL } = useLanguage();
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = () =>
     Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
@@ -37,15 +39,17 @@ function OfferBanner({ offer }: { offer: (typeof FEATURED_OFFERS)[0] }) {
           style={styles.offerGradient}
         >
           <View style={styles.offerContent}>
-            <View
-              style={[styles.offerBadge, { backgroundColor: offer.accentColor }]}
-            >
+            <View style={[styles.offerBadge, { backgroundColor: offer.accentColor }]}>
               <Text style={styles.offerBadgeText}>-{offer.discount}%</Text>
             </View>
-            <Text style={styles.offerTitle}>{offer.title}</Text>
-            <Text style={styles.offerDesc}>{offer.description}</Text>
-            <Text style={styles.offerExpiry}>
-              Valid until {new Date(offer.validUntil).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            <Text style={[styles.offerTitle, isRTL && styles.rtlText]}>{offer.title}</Text>
+            <Text style={[styles.offerDesc, isRTL && styles.rtlText]}>{offer.description}</Text>
+            <Text style={[styles.offerExpiry, isRTL && styles.rtlText]}>
+              {t.home.validUntil}{" "}
+              {new Date(offer.validUntil).toLocaleDateString(isRTL ? "ar-EG" : "en-US", {
+                month: "short",
+                day: "numeric",
+              })}
             </Text>
           </View>
           <View style={styles.offerDecor}>
@@ -60,6 +64,7 @@ function OfferBanner({ offer }: { offer: (typeof FEATURED_OFFERS)[0] }) {
 function ContinueReadingCard({ book }: { book: any }) {
   const colors = useColors();
   const router = useRouter();
+  const { t, isRTL } = useLanguage();
   const scale = useRef(new Animated.Value(1)).current;
   const onPressIn = () =>
     Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 40 }).start();
@@ -78,11 +83,11 @@ function ContinueReadingCard({ book }: { book: any }) {
           <Ionicons name="book" size={24} color={book.coverAccent} />
         </View>
         <View style={styles.continueInfo}>
-          <Text style={[styles.continueTitle, { color: colors.foreground }]} numberOfLines={1}>
+          <Text style={[styles.continueTitle, { color: colors.foreground }, isRTL && styles.rtlText]} numberOfLines={1}>
             {book.title}
           </Text>
-          <Text style={[styles.continueSubtitle, { color: colors.mutedForeground }]}>
-            Page {book.lastPage} of {book.pages}
+          <Text style={[styles.continueSubtitle, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+            {t.home.page} {book.lastPage} {t.home.of} {book.pages}
           </Text>
           <View style={styles.progressRow}>
             <View style={[styles.progressBar, { backgroundColor: colors.muted }]}>
@@ -99,7 +104,7 @@ function ContinueReadingCard({ book }: { book: any }) {
           </View>
         </View>
         <View style={[styles.continueBtn, { backgroundColor: colors.primary }]}>
-          <Ionicons name="play" size={14} color="#fff" />
+          <Ionicons name="play" size={14} color="#fff" style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} />
         </View>
       </Pressable>
     </Animated.View>
@@ -111,6 +116,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isAuthenticated, purchasedBooks } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const featuredBooks = BOOKS.filter((b) => b.isFeatured);
   const popularBooks = BOOKS.filter((b) => b.isPopular);
@@ -132,10 +138,12 @@ export default function HomeScreen() {
       >
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.headerGreeting}>
-              {isAuthenticated ? `Hello, ${user?.name?.split(" ")[0]}` : "Welcome to"}
+            <Text style={[styles.headerGreeting, isRTL && styles.rtlText]}>
+              {isAuthenticated
+                ? `${t.home.hello} ${user?.name?.split(" ")[0]}`
+                : t.home.welcome}
             </Text>
-            <Text style={styles.headerBrand}>Warqless</Text>
+            <Text style={[styles.headerBrand, isRTL && styles.rtlText]}>Warqless</Text>
           </View>
           <View style={styles.headerActions}>
             <Pressable
@@ -149,26 +157,26 @@ export default function HomeScreen() {
                 onPress={() => router.push("/auth")}
                 style={[styles.signInBtn, { backgroundColor: colors.accent }]}
               >
-                <Text style={styles.signInText}>Sign In</Text>
+                <Text style={styles.signInText}>{t.home.signIn}</Text>
               </Pressable>
             )}
           </View>
         </View>
 
-        <View style={[styles.searchBar, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+        <Pressable
+          style={[styles.searchBar, { backgroundColor: "rgba(255,255,255,0.15)" }]}
+          onPress={() => router.push("/(tabs)/browse")}
+        >
           <Ionicons name="search" size={18} color="rgba(255,255,255,0.7)" />
-          <Pressable
-            style={{ flex: 1 }}
-            onPress={() => router.push("/(tabs)/browse")}
-          >
-            <Text style={styles.searchPlaceholder}>Search books, subjects, publishers...</Text>
-          </Pressable>
-        </View>
+          <Text style={[styles.searchPlaceholder, isRTL && styles.rtlText]}>
+            {t.home.searchPlaceholder}
+          </Text>
+        </Pressable>
       </LinearGradient>
 
       {/* Offers */}
       <View style={styles.section}>
-        <SectionHeader title="Active Offers" subtitle="Limited time discounts" />
+        <SectionHeader title={t.home.activeOffers} subtitle={t.home.limitedTime} />
         <FlatList
           data={FEATURED_OFFERS}
           horizontal
@@ -183,9 +191,10 @@ export default function HomeScreen() {
       {continueReading.length > 0 && (
         <View style={styles.section}>
           <SectionHeader
-            title="Continue Reading"
-            subtitle="Pick up where you left off"
+            title={t.home.continueReading}
+            subtitle={t.home.pickUp}
             seeAllRoute="/(tabs)/library"
+            seeAllLabel={t.home.seeAll}
           />
           <View style={styles.continueList}>
             {continueReading.slice(0, 3).map((b) => (
@@ -198,9 +207,10 @@ export default function HomeScreen() {
       {/* Featured Books */}
       <View style={styles.section}>
         <SectionHeader
-          title="Featured Books"
-          subtitle="Handpicked for you"
+          title={t.home.featuredBooks}
+          subtitle={t.home.handpicked}
           seeAllRoute="/(tabs)/browse"
+          seeAllLabel={t.home.seeAll}
         />
         <View style={styles.featuredList}>
           {featuredBooks.slice(0, 4).map((b) => (
@@ -211,7 +221,7 @@ export default function HomeScreen() {
 
       {/* Browse by Grade */}
       <View style={styles.section}>
-        <SectionHeader title="Browse by Grade" />
+        <SectionHeader title={t.home.byGrade} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gradeRow}>
           {GRADES.map((g) => (
             <Pressable
@@ -228,9 +238,10 @@ export default function HomeScreen() {
       {/* Popular Books */}
       <View style={styles.section}>
         <SectionHeader
-          title="Popular Books"
-          subtitle="Trending this week"
+          title={t.home.popularBooks}
+          subtitle={t.home.trending}
           seeAllRoute="/(tabs)/browse"
+          seeAllLabel={t.home.seeAll}
         />
         <FlatList
           data={popularBooks}
@@ -248,7 +259,7 @@ export default function HomeScreen() {
 
       {/* Browse by Subject */}
       <View style={styles.section}>
-        <SectionHeader title="Browse by Subject" />
+        <SectionHeader title={t.home.bySubject} />
         <View style={styles.subjectGrid}>
           {SUBJECTS.slice(0, 6).map((s) => (
             <Pressable
@@ -267,8 +278,9 @@ export default function HomeScreen() {
       {newBooks.length > 0 && (
         <View style={styles.section}>
           <SectionHeader
-            title="New Releases"
+            title={t.home.newReleases}
             seeAllRoute="/(tabs)/browse"
+            seeAllLabel={t.home.seeAll}
           />
           <View style={[styles.newList, { paddingHorizontal: 16 }]}>
             {newBooks.map((b) => (
@@ -339,6 +351,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+    flex: 1,
   },
   section: {
     marginTop: 28,
@@ -497,4 +510,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   newList: {},
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
+  },
 });

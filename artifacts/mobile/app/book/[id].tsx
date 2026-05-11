@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BookCard } from "@/components/BookCard";
 import { useApp } from "@/context/AppContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { BOOKS, BOOK_TYPES } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
@@ -24,6 +25,7 @@ export default function BookDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { purchasedBooks, purchaseBook, isAuthenticated } = useApp();
+  const { t, isRTL } = useLanguage();
 
   const book = BOOKS.find((b) => b.id === id);
   const [purchasing, setPurchasing] = useState(false);
@@ -36,9 +38,9 @@ export default function BookDetailScreen() {
 
   const handlePurchase = async () => {
     if (!isAuthenticated) {
-      Alert.alert("Sign In Required", "Please sign in to purchase books.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Sign In", onPress: () => router.push("/auth") },
+      Alert.alert(t.common.confirm, t.auth.fillAll, [
+        { text: t.common.cancel, style: "cancel" },
+        { text: t.auth.signIn, onPress: () => router.push("/auth") },
       ]);
       return;
     }
@@ -46,9 +48,8 @@ export default function BookDetailScreen() {
     setPurchasing(true);
     await purchaseBook(book);
     setPurchasing(false);
-    Alert.alert("Purchase Successful!", `"${book.title}" has been added to your library.`, [
-      { text: "Read Now", onPress: () => router.push(`/reader/${book.id}`) },
-      { text: "Go to Library", onPress: () => router.push("/(tabs)/library") },
+    Alert.alert(t.book.purchaseSuccess, t.book.purchaseSuccessDesc, [
+      { text: t.book.ok, onPress: () => router.push(`/reader/${book.id}`) },
     ]);
   };
 
@@ -56,32 +57,56 @@ export default function BookDetailScreen() {
     return (
       <View style={[styles.notFound, { backgroundColor: colors.background }]}>
         <Ionicons name="book-outline" size={48} color={colors.mutedForeground} />
-        <Text style={[styles.notFoundText, { color: colors.foreground }]}>Book not found</Text>
+        <Text style={[styles.notFoundText, { color: colors.foreground }]}>
+          {t.common.error}
+        </Text>
       </View>
     );
   }
 
-  const typeLabel = BOOK_TYPES.find((t) => t.value === book.type)?.label ?? book.type;
+  const typeLabel = t.bookTypes[book.type as keyof typeof t.bookTypes] ?? book.type;
   const discount = book.originalPrice
     ? Math.round((1 - book.price / book.originalPrice) * 100)
     : 0;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
+  const features = [
+    { icon: "checkmark-circle" as const, text: "Full digital license — read anytime", check: true },
+    { icon: "bookmark" as const, text: t.reader.bookmarks + " & " + t.reader.highlights, check: true },
+    { icon: "create" as const, text: t.reader.notes, check: true },
+    { icon: "cloud" as const, text: "Cloud sync across devices", check: true },
+    {
+      icon: book.lendingEnabled ? ("people" as const) : ("people-outline" as const),
+      text: `${t.book.lending}: ${book.lendingEnabled ? t.book.lendingEnabled : t.book.lendingDisabled}`,
+      check: book.lendingEnabled,
+    },
+    { icon: "phone-portrait" as const, text: `${t.book.deviceLimit}: 2 ${t.book.devices}`, check: true },
+  ];
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Back button */}
       <Pressable
         onPress={() => router.back()}
-        style={[styles.backBtn, { top: topPad + 8, backgroundColor: colors.card + "E0" }]}
+        style={[
+          styles.backBtn,
+          {
+            top: topPad + 8,
+            backgroundColor: colors.card + "E0",
+            left: isRTL ? undefined : 16,
+            right: isRTL ? 16 : undefined,
+          },
+        ]}
       >
-        <Ionicons name="arrow-back" size={22} color={colors.foreground} />
+        <Ionicons
+          name={isRTL ? "arrow-forward" : "arrow-back"}
+          size={22}
+          color={colors.foreground}
+        />
       </Pressable>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Book cover hero */}
         <View style={[styles.hero, { backgroundColor: book.coverGradient[0] }]}>
           <View style={[styles.heroShine, { backgroundColor: book.coverAccent + "20" }]} />
@@ -94,8 +119,10 @@ export default function BookDetailScreen() {
 
         {/* Book info */}
         <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.foreground }]}>{book.title}</Text>
+          <View style={[styles.titleRow, isRTL && styles.rtlRow]}>
+            <Text style={[styles.title, { color: colors.foreground }, isRTL && styles.rtlText]}>
+              {book.title}
+            </Text>
             <Pressable
               onPress={() => setWishlisted(!wishlisted)}
               style={[styles.wishlistBtn, { backgroundColor: colors.secondary, borderColor: colors.border }]}
@@ -108,47 +135,66 @@ export default function BookDetailScreen() {
             </Pressable>
           </View>
 
-          <Text style={[styles.publisher, { color: colors.primary }]}>{book.publisher}</Text>
+          <Text style={[styles.publisher, { color: colors.primary }, isRTL && styles.rtlText]}>
+            {book.publisher}
+          </Text>
 
           {/* Rating */}
-          <View style={styles.ratingRow}>
+          <View style={[styles.ratingRow, isRTL && styles.rtlRow]}>
             {[1, 2, 3, 4, 5].map((s) => (
               <Ionicons
                 key={s}
-                name={s <= Math.floor(book.rating) ? "star" : s - 0.5 <= book.rating ? "star-half" : "star-outline"}
+                name={
+                  s <= Math.floor(book.rating)
+                    ? "star"
+                    : s - 0.5 <= book.rating
+                    ? "star-half"
+                    : "star-outline"
+                }
                 size={16}
                 color="#F59E0B"
               />
             ))}
             <Text style={[styles.ratingValue, { color: colors.foreground }]}>{book.rating}</Text>
             <Text style={[styles.ratingCount, { color: colors.mutedForeground }]}>
-              ({book.reviewCount.toLocaleString()} reviews)
+              ({book.reviewCount.toLocaleString()} {t.book.reviews})
             </Text>
           </View>
 
           {/* Tags */}
-          <View style={styles.tagsRow}>
+          <View style={[styles.tagsRow, isRTL && styles.rtlWrap]}>
             {[book.grade, book.subject, typeLabel, book.academicYear].map((tag) => (
-              <View key={tag} style={[styles.tag, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+              <View
+                key={tag}
+                style={[styles.tag, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              >
                 <Text style={[styles.tagText, { color: colors.primary }]}>{tag}</Text>
               </View>
             ))}
-            {book.isNew && (
-              <View style={[styles.tag, { backgroundColor: colors.success + "20", borderColor: colors.success + "40" }]}>
-                <Text style={[styles.tagText, { color: colors.success }]}>New</Text>
-              </View>
-            )}
           </View>
 
           {/* Price */}
-          <View style={[styles.priceBox, { backgroundColor: colors.secondary, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.priceBox,
+              {
+                backgroundColor: colors.secondary,
+                borderColor: colors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
+            ]}
+          >
             <View>
-              <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Price</Text>
-              <View style={styles.priceRow}>
-                <Text style={[styles.price, { color: colors.accent }]}>EGP {book.price}</Text>
+              <Text style={[styles.priceLabel, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+                {t.common.egp}
+              </Text>
+              <View style={[styles.priceRow, isRTL && styles.rtlRow]}>
+                <Text style={[styles.price, { color: colors.accent }]}>
+                  {t.common.egp} {book.price}
+                </Text>
                 {book.originalPrice && (
                   <Text style={[styles.originalPrice, { color: colors.mutedForeground }]}>
-                    EGP {book.originalPrice}
+                    {t.common.egp} {book.originalPrice}
                   </Text>
                 )}
                 {discount > 0 && (
@@ -159,28 +205,31 @@ export default function BookDetailScreen() {
               </View>
             </View>
             <View>
-              <Text style={[styles.pagesLabel, { color: colors.mutedForeground }]}>{book.pages} pages</Text>
+              <Text style={[styles.pagesLabel, { color: colors.mutedForeground }]}>
+                {book.pages} {t.book.pages}
+              </Text>
             </View>
           </View>
 
           {/* Features */}
           <View style={styles.featuresSection}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>What&apos;s included</Text>
-            {[
-              { icon: "checkmark-circle" as const, text: "Full digital license — read anytime", check: true },
-              { icon: "bookmark" as const, text: "Bookmarks & highlights", check: true },
-              { icon: "create" as const, text: "Pen annotations & notes", check: true },
-              { icon: "cloud" as const, text: "Cloud sync across devices", check: true },
-              { icon: book.lendingEnabled ? ("people" as const) : ("people-outline" as const), text: book.lendingEnabled ? "Lending enabled" : "Lending not available", check: book.lendingEnabled },
-              { icon: "phone-portrait" as const, text: "Up to 2 authorized devices", check: true },
-            ].map((f) => (
-              <View key={f.text} style={styles.featureRow}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+              {t.book.features}
+            </Text>
+            {features.map((f) => (
+              <View key={f.text} style={[styles.featureRow, isRTL && styles.rtlRow]}>
                 <Ionicons
                   name={f.icon}
                   size={18}
                   color={f.check ? colors.success : colors.mutedForeground}
                 />
-                <Text style={[styles.featureText, { color: f.check ? colors.foreground : colors.mutedForeground }]}>
+                <Text
+                  style={[
+                    styles.featureText,
+                    { color: f.check ? colors.foreground : colors.mutedForeground },
+                    isRTL && styles.rtlText,
+                  ]}
+                >
                   {f.text}
                 </Text>
               </View>
@@ -189,24 +238,41 @@ export default function BookDetailScreen() {
 
           {/* Description */}
           <View style={styles.descSection}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>About this book</Text>
-            <Text style={[styles.description, { color: colors.mutedForeground }]}>
+            <Text style={[styles.sectionTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+              {t.book.aboutTitle}
+            </Text>
+            <Text
+              style={[styles.description, { color: colors.mutedForeground }, isRTL && styles.rtlText]}
+            >
               {book.description}
             </Text>
           </View>
 
           {/* License info */}
-          <View style={[styles.licenseBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+          <View
+            style={[
+              styles.licenseBox,
+              {
+                backgroundColor: colors.muted,
+                borderColor: colors.border,
+                flexDirection: isRTL ? "row-reverse" : "row",
+              },
+            ]}
+          >
             <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
-            <Text style={[styles.licenseText, { color: colors.mutedForeground }]}>
-              Protected digital license. Read inside Warqless app only. Your purchase is tied to your account and authorized devices.
+            <Text
+              style={[styles.licenseText, { color: colors.mutedForeground }, isRTL && styles.rtlText]}
+            >
+              {t.book.license}
             </Text>
           </View>
 
           {/* Related books */}
           {related.length > 0 && (
             <View style={styles.relatedSection}>
-              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Related Books</Text>
+              <Text style={[styles.sectionTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                {t.book.relatedBooks}
+              </Text>
               {related.map((b) => (
                 <BookCard key={b.id} book={b} variant="horizontal" />
               ))}
@@ -232,20 +298,25 @@ export default function BookDetailScreen() {
             style={[styles.ctaBtn, { backgroundColor: colors.success }]}
           >
             <Ionicons name="book-outline" size={20} color="#fff" />
-            <Text style={styles.ctaBtnText}>Read Now</Text>
+            <Text style={styles.ctaBtnText}>{t.book.openReader}</Text>
           </Pressable>
         ) : (
           <Pressable
             onPress={handlePurchase}
             disabled={purchasing}
-            style={[styles.ctaBtn, { backgroundColor: purchasing ? colors.primary + "80" : colors.primary }]}
+            style={[
+              styles.ctaBtn,
+              { backgroundColor: purchasing ? colors.primary + "80" : colors.primary },
+            ]}
           >
             {purchasing ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <>
                 <Ionicons name="cart-outline" size={20} color="#fff" />
-                <Text style={styles.ctaBtnText}>Buy — EGP {book.price}</Text>
+                <Text style={styles.ctaBtnText}>
+                  {t.book.buyNow} — {t.common.egp} {book.price}
+                </Text>
               </>
             )}
           </Pressable>
@@ -270,7 +341,6 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     position: "absolute",
-    left: 16,
     zIndex: 10,
     width: 40,
     height: 40,
@@ -318,6 +388,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
+  },
+  rtlRow: {
+    flexDirection: "row-reverse",
+  },
+  rtlWrap: {
+    flexDirection: "row-reverse",
+    flexWrap: "wrap",
   },
   title: {
     flex: 1,
@@ -372,7 +449,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   priceBox: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
@@ -438,7 +514,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   licenseBox: {
-    flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
     padding: 14,
@@ -474,5 +549,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
     fontFamily: "Inter_700Bold",
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
 });

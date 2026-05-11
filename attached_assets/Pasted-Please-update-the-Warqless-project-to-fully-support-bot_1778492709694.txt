@@ -1,0 +1,126 @@
+Please update the Warqless project to fully support both Arabic and English.
+
+Important requirements:
+
+1. Bilingual app support
+The mobile app must support:
+- English
+- Arabic
+
+Add a proper language switcher inside the app settings/account area.
+
+The selected language should affect the whole app, including:
+- Navigation labels
+- Page titles
+- Buttons
+- Search placeholders
+- Offers text
+- Book details
+- Reader UI
+- Auth screens
+- Empty states
+- Error messages
+- Success messages
+- Forms and validation messages
+
+2. Arabic UI / RTL support
+Arabic must not be just translated text. The whole UI must follow Arabic design standards.
+
+When Arabic is selected:
+- The app direction should become RTL.
+- Text alignment should be right-aligned.
+- Icons and arrows should be mirrored where needed.
+- Back buttons should appear in the correct Arabic position.
+- Horizontal lists, cards, tabs, and page transitions should feel natural in RTL.
+- Bottom navigation should display Arabic labels correctly.
+- Spacing, padding, and layout hierarchy should be adjusted for Arabic readability.
+- Arabic typography should look clean, premium, and readable.
+
+Please use a modern Arabic font or a system Arabic font that works well on mobile.
+
+3. English UI / LTR support
+When English is selected:
+- The app direction should remain LTR.
+- Current English layout should stay clean and premium.
+- Do not break the existing English design.
+
+4. Translation structure
+Please build a clean localization system, not hardcoded duplicated screens.
+
+Use a proper i18n structure such as:
+- en translation file
+- ar translation file
+- reusable translation keys
+- central language provider/context
+- persistent language selection using local storage or AsyncStorage
+
+The goal is that we can easily add or edit translations later.
+
+5. Arabic content style
+Use professional Egyptian/Modern Standard Arabic suitable for an educational books marketplace.
+
+Examples:
+- Home = الرئيسية
+- Browse = تصفح
+- Library = مكتبتي
+- Borrowed = المستعار
+- Account = الحساب
+- Search books, subjects, publishers = ابحث عن الكتب أو المواد أو الناشرين
+- Active Offers = العروض الحالية
+- Continue Reading = استكمال القراءة
+- See all = عرض الكل
+- Sign In = تسجيل الدخول
+
+6. Separate admin web version
+Very important:
+The normal users/students should use the mobile app only.
+
+I also need a separate web version for admins/publishers only.
+
+So the project should have:
+- Mobile app for students/users
+- Web admin dashboard for admins and publishers only
+
+The admin dashboard should not be part of the normal student mobile UI.
+
+Admin/publisher web dashboard should include:
+- Login for admin/publisher accounts
+- Book management
+- Publisher management
+- Categories/subjects/grades management
+- Offers and coupon management
+- Orders and sales analytics
+- User/student overview
+- Borrowing/license management
+- Basic settings
+
+7. Access rules
+Please separate roles clearly:
+- Student/User: mobile app only
+- Publisher: web dashboard only
+- Admin: web dashboard only
+
+Students should not see dashboard features.
+Admins and publishers should not use the student app as their main management interface.
+
+8. Design direction
+Keep the current premium educational style:
+- Deep navy blue
+- Warm gold accents
+- Clean white backgrounds
+- Rounded cards
+- Smooth animations
+- Modern app-store-quality UI
+
+For Arabic, make the UI feel native and polished, not like an English layout with translated words.
+
+9. Do not remove existing features
+Do not delete the current English screens or features.
+Refactor them to support localization and RTL properly.
+
+10. Final check
+After implementation, test both languages:
+- English LTR
+- Arabic RTL
+
+Make sure navigation, tabs, cards, buttons, reader pages, search, and forms all display correctly in both languages.

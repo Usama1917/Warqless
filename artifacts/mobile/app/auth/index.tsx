@@ -42,21 +42,27 @@ export default function AuthScreen() {
     }
     setLoading(true);
     try {
-      let ok: boolean;
       if (mode === "login") {
-        ok = await login(email, password);
+        const result = await login(email, password);
+        if (result === "ok") {
+          router.replace("/(tabs)");
+        } else if (result === "device_blocked") {
+          setError(t.protection.deviceBlockedDesc + "\n\n" + t.protection.deviceChangeInfo);
+        } else {
+          setError(t.auth.invalidCredentials);
+        }
       } else {
         if (!name || !phone) {
           setError(t.auth.fillAll);
           setLoading(false);
           return;
         }
-        ok = await register(name, email, phone, password);
-      }
-      if (ok) {
-        router.replace("/(tabs)");
-      } else {
-        setError(t.auth.invalidCredentials);
+        const ok = await register(name, email, phone, password);
+        if (ok) {
+          router.replace("/(tabs)");
+        } else {
+          setError(t.auth.error);
+        }
       }
     } catch {
       setError(t.auth.error);

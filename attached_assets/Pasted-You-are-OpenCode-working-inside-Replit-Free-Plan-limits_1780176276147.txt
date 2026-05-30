@@ -1,0 +1,494 @@
+You are OpenCode working inside Replit Free Plan limits.
+
+Project name: Warqless
+
+Warqless is a digital educational book platform for students and publishers.
+
+Important context:
+I am using Replit Free Plan, so I do NOT want a heavy implementation right now.
+
+Do not build a complex production backend.
+Do not implement full payments.
+Do not implement real DRM.
+Do not implement real file storage.
+Do not implement heavy database logic.
+Do not install unnecessary packages.
+Do not overbuild.
+
+I want you to focus only on the most important lightweight MVP structure that can run smoothly on Replit.
+
+==================================================
+MAIN GOAL
+=========
+
+Build a clean, lightweight, demo-ready Warqless MVP structure.
+
+The MVP should show the product idea clearly:
+
+1. Student can browse books.
+2. Student can view book details.
+3. Student can “buy” a book using mock purchase.
+4. Purchased book appears in My Library.
+5. Student can open the book in a simple protected-looking reader.
+6. Reader shows watermark with student info.
+7. Student can add basic notes/bookmarks/highlights if easy.
+8. Admin can manage books using mock/local data.
+9. Publisher can view their books and simple mock sales.
+10. Roles should be separated visually:
+
+* Student app
+* Admin dashboard
+* Publisher dashboard
+
+This version is for prototype/demo only, not production.
+
+==================================================
+REPLIT FREE PLAN RULES
+======================
+
+Because I am using Replit Free Plan:
+
+* Keep the project simple.
+* Keep dependencies minimal.
+* Avoid heavy backend services.
+* Avoid complex monorepo setup if it causes problems.
+* Avoid long-running background jobs.
+* Avoid external paid services.
+* Avoid complex migrations.
+* Avoid complex authentication.
+* Prefer local/mock data for now.
+* Prefer simple JSON/local storage/mock state.
+* Make the app easy to run with one command.
+* Make sure the UI works and clearly demonstrates the idea.
+
+If the current project is too heavy, simplify carefully without deleting important existing work.
+
+Before changing anything:
+
+1. Inspect the current project.
+2. Explain what is heavy or unnecessary for Replit Free.
+3. Propose a lightweight MVP plan.
+4. Then implement only the approved lightweight structure.
+
+==================================================
+WHAT TO PRIORITIZE NOW
+======================
+
+Priority 1:
+Student-facing app experience.
+
+The student side is the most important right now.
+
+Build or improve:
+
+* Student Home
+* Browse Books
+* Book Details
+* Mock Checkout
+* My Library
+* Reader
+* Account
+
+The student should feel like they are using a real digital book app, not an admin dashboard.
+
+Student app should be Arabic-first and RTL.
+
+Main Arabic navigation:
+
+* الرئيسية
+* الكتب
+* مكتبتي
+* الحساب
+
+Optional:
+
+* المستعار
+
+==================================================
+STUDENT FEATURES FOR THIS MVP
+=============================
+
+Student Home:
+
+* Greeting
+* Search bar
+* Continue reading
+* Recommended books
+* Popular books
+* New books
+* Categories by grade/subject
+
+Browse Books:
+
+* Book grid/cards
+* Search
+* Simple filters:
+
+  * Grade
+  * Subject
+  * Publisher
+* Book card:
+
+  * Cover
+  * Title
+  * Publisher
+  * Subject
+  * Grade
+  * Price
+  * Button: عرض التفاصيل
+
+Book Details:
+
+* Cover
+* Title
+* Publisher
+* Description
+* Subject
+* Grade
+* Price
+* Preview button
+* Buy button
+* Lending availability badge, mock only
+* Related books
+
+Mock Checkout:
+
+* No real payment.
+* When student clicks buy, show a confirmation screen/modal.
+* After confirmation, add the book to My Library using local state/local storage.
+* Show success message:
+  “تم إضافة الكتاب إلى مكتبتك”
+
+My Library:
+
+* Show purchased books.
+* Reading progress.
+* Button: فتح الكتاب
+* Empty state:
+  “مكتبتك لسه فاضية”
+
+Reader:
+
+* Simple reader UI.
+* It can show sample pages/mock pages.
+* Add watermark overlay:
+  “Warqless - [student@example.com](mailto:student@example.com) - Demo License”
+* Page navigation.
+* Progress indicator.
+* Bookmark button.
+* Basic note area if easy.
+* Highlight/pen tools can be visual/mock buttons for now.
+
+Important:
+The reader does not need real PDF DRM now.
+Just make it look like a protected in-app reader for demo.
+
+Account:
+
+* Student name/email
+* My orders, mock
+* My devices, mock
+* Logout
+* App language, mock
+
+==================================================
+ADMIN FEATURES FOR THIS MVP
+===========================
+
+Keep admin dashboard lightweight.
+
+Admin can:
+
+* View overview stats using mock data.
+* View books list.
+* Add/edit/delete mock books if easy.
+* View publishers.
+* View students.
+* View mock orders.
+
+Do not build complex backend admin logic now.
+
+Admin pages:
+
+* Overview
+* Books
+* Publishers
+* Students
+* Orders
+* Settings
+
+==================================================
+PUBLISHER FEATURES FOR THIS MVP
+===============================
+
+Publisher dashboard should be simple.
+
+Publisher can:
+
+* View their mock books.
+* See mock sales.
+* See mock revenue.
+* Add/edit book if easy.
+* See simple analytics cards.
+
+Publisher pages:
+
+* Overview
+* My Books
+* Orders
+* Analytics, simple
+* Settings
+
+==================================================
+AUTH FOR THIS MVP
+=================
+
+Use simple demo authentication only.
+
+Do not build production auth now.
+
+Create demo login accounts:
+
+Admin:
+email: [admin@warqless.com](mailto:admin@warqless.com)
+password: password123
+
+Publisher:
+email: [publisher1@example.com](mailto:publisher1@example.com)
+password: password123
+
+Student:
+email: [student@example.com](mailto:student@example.com)
+password: password123
+
+Login behavior:
+
+* Admin redirects to admin dashboard.
+* Publisher redirects to publisher dashboard.
+* Student redirects to student home.
+* Student must not enter admin/publisher dashboard.
+* Admin/publisher dashboard should not be shown to students.
+
+This can be local state/local storage for now.
+
+Important:
+Clearly comment in code that this is demo-only authentication and must be replaced later with backend auth.
+
+==================================================
+DATA FOR THIS MVP
+=================
+
+Use mock data.
+
+Create a clean mock data structure for:
+
+Books:
+
+* id
+* title
+* publisher
+* subject
+* grade
+* academicYear
+* price
+* oldPrice
+* cover
+* description
+* pageCount
+* bookType
+* lendingEnabled
+* pages/mockContent
+
+Publishers:
+
+* id
+* name
+* logo
+* booksCount
+* sales
+* revenue
+
+Students:
+
+* id
+* name
+* email
+* grade
+* purchasedBooks
+
+Orders:
+
+* id
+* studentName
+* bookTitle
+* price
+* status
+* date
+
+Reading progress:
+
+* bookId
+* currentPage
+* progressPercent
+
+Keep mock data organized in one clear file or folder.
+
+==================================================
+UI/UX REQUIREMENTS
+==================
+
+Make the UI polished but lightweight.
+
+Design style:
+
+* Modern
+* Clean
+* Premium
+* Educational
+* Arabic-first
+* RTL support
+* Mobile-first for student side
+* Dashboard style for admin/publisher
+* Rounded cards
+* Soft shadows
+* Warqless blue primary color
+* Good spacing
+* Smooth but not heavy animations
+
+Brand:
+Name: Warqless
+Arabic slogan:
+كتبك من غير ورق
+
+English slogan:
+Your books. No paper.
+
+Student app should feel like:
+“مكتبتك الرقمية للكتب الخارجية”
+
+==================================================
+WHAT NOT TO BUILD NOW
+=====================
+
+Do not build these in this Replit Free MVP:
+
+* Real PostgreSQL database
+* Real Drizzle migrations
+* Real payment gateway
+* Real secure PDF DRM
+* Real file upload/storage
+* Real publisher payout system
+* Real email/SMS notifications
+* Real AI tutor
+* Real device fingerprinting
+* Real anti-piracy system
+* Real background jobs
+* Complex API generation
+* Complex OpenAPI codegen
+* Heavy mobile native features
+* Production authentication
+
+Only create a clear prototype structure that can later be connected to real backend services.
+
+==================================================
+RECOMMENDED STRUCTURE
+=====================
+
+Use the current project structure if it already works.
+
+If the current structure is too heavy for Replit Free, propose a simpler structure first.
+
+Preferred simple structure:
+
+src/
+data/
+mockData.ts
+auth/
+AuthContext.tsx
+layouts/
+StudentLayout.tsx
+DashboardLayout.tsx
+pages/
+student/
+Home.tsx
+BrowseBooks.tsx
+BookDetails.tsx
+Checkout.tsx
+Library.tsx
+Reader.tsx
+Account.tsx
+admin/
+Dashboard.tsx
+Books.tsx
+Publishers.tsx
+Students.tsx
+Orders.tsx
+Settings.tsx
+publisher/
+Dashboard.tsx
+MyBooks.tsx
+Orders.tsx
+Analytics.tsx
+Settings.tsx
+Login.tsx
+components/
+BookCard.tsx
+StatCard.tsx
+ProtectedRoute.tsx
+ReaderToolbar.tsx
+BottomNav.tsx
+
+This is only a suggestion. Follow the current project architecture if it is already better.
+
+==================================================
+IMPLEMENTATION ORDER
+====================
+
+Work in this order:
+
+1. Inspect current project.
+2. Identify the simplest working app entry point for Replit.
+3. Fix routing so roles go to the right place:
+
+   * student
+   * admin
+   * publisher
+4. Build/improve student layout.
+5. Build student home.
+6. Build browse books.
+7. Build book details.
+8. Build mock checkout.
+9. Build my library using local storage.
+10. Build simple reader with watermark.
+11. Keep admin/publisher dashboards working with mock data.
+12. Add clean README instructions for running on Replit.
+
+==================================================
+EXPECTED OUTPUT AFTER FINISHING
+===============================
+
+When done, reply with:
+
+1. What you changed
+2. What files you edited/created
+3. How to run the project on Replit
+4. Demo accounts
+5. What works now
+6. What is still mock/demo only
+7. What should be built later when we move to a paid server or real backend
+
+==================================================
+IMPORTANT FINAL REMINDER
+========================
+
+This is a Replit Free MVP.
+
+Make it lightweight, simple, visual, and demo-ready.
+
+The goal now is not production.
+The goal now is to make Warqless look and feel real enough to test the idea with students and publishers.
+
+Do not overbuild.
+Do not add unnecessary complexity.
+Do not break existing dashboards.
+Focus on the student experience first.

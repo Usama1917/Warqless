@@ -1,0 +1,355 @@
+I want you to continue improving the Warqless mobile/student app.
+
+Focus on two important areas:
+
+1. Improve the mobile UI navigation to feel like a premium iOS-style app.
+2. Start building the content protection logic for the mobile version, especially device locking.
+
+Project name:
+Warqless
+
+Main idea:
+Warqless is a digital educational book app. Students buy digital books and read them only inside the app. The content must be protected as much as possible from downloading, leaking, copying, or opening on multiple devices.
+
+==================================================
+
+1. MOBILE UI / IOS GLASS NAVIGATION
+   ==================================================
+
+Please improve the mobile version navigation.
+
+The current mobile UI is good, but I want the bottom navigation to feel more premium and closer to Apple/iOS style.
+
+Design direction:
+
+* iOS-style glassmorphism bottom navigation
+* Frosted glass effect
+* Blur background
+* Semi-transparent white/soft background
+* Rounded top corners
+* Floating bottom bar if possible
+* Smooth active tab animation
+* Premium Apple-like icons
+* Clean spacing
+* Modern, minimal look
+* Works well on iPhone-style screen sizes
+* Safe area support for iPhone bottom area
+* Arabic RTL support when Arabic is active
+* English support if current UI uses English
+
+Bottom navigation tabs:
+
+* Home
+* Browse
+* Library
+* Borrowed
+* Account
+
+Arabic labels:
+
+* الرئيسية
+* الكتب
+* مكتبتي
+* المستعار
+* الحساب
+
+Icon style:
+Use clean iOS-like outline icons.
+The active icon should feel highlighted but not too heavy.
+The bottom navigation should look modern, soft, and premium.
+
+Important:
+Do not make it look like an admin dashboard.
+The student mobile app should feel like a real native educational reading app.
+
+==================================================
+2. MOBILE CONTENT PROTECTION — VERY IMPORTANT
+=============================================
+
+Now I want to start working on the content protection side for the phone app.
+
+The most important rule:
+A purchased book must NOT be downloadable in any direct way.
+
+The student should never receive:
+
+* a PDF download button
+* a public file URL
+* an exposed direct file link
+* a raw PDF file
+* any easy way to export the book file
+
+The book should only open inside the Warqless reader.
+
+For the MVP/demo, implement the structure and UI/logic as much as possible, even if some parts are still simulated.
+
+==================================================
+3. INTERNET REQUIRED TO OPEN THE APP / BOOKS
+============================================
+
+The app should require an internet connection to verify access.
+
+Rules:
+
+* The app should check online access when opening.
+* The user should not be able to open books if the app cannot verify the session/license.
+* Show a clear message if offline:
+  Arabic:
+  “يجب الاتصال بالإنترنت لفتح الكتب والتحقق من الترخيص”
+  English:
+  “Internet connection is required to open books and verify your license.”
+
+For now, if real backend license verification is not implemented, create a clean placeholder function such as:
+
+* verifyOnlineAccess()
+* verifyBookLicense()
+* verifyDeviceAccess()
+
+Make the code ready for real backend integration later.
+
+==================================================
+4. ONE DEVICE ONLY — NOT EMAIL, NOT PHONE, DEVICE
+=================================================
+
+This is extremely important.
+
+The account/book access must be locked to ONE DEVICE ONLY.
+
+I do not mean one email.
+I do not mean one phone number.
+I mean ONE PHYSICAL DEVICE.
+
+A student account should not be able to open the app/books on multiple devices.
+
+Rules:
+
+* On first successful login, register the current device as the account’s primary device.
+* After that, the same account should only work on that same registered device.
+* If the user logs in from another device, block access.
+* Show a clear message:
+  Arabic:
+  “هذا الحساب مرتبط بجهاز آخر. لا يمكن فتح الحساب إلا من جهاز واحد فقط.”
+  English:
+  “This account is linked to another device. It can only be used on one device.”
+
+Device lock should be based on a device identifier/fingerprint, not just email or phone.
+
+For MVP/demo:
+If a true device fingerprint is not available in the current stack, create a clean device identity layer:
+
+* getCurrentDeviceId()
+* registerPrimaryDevice()
+* verifyPrimaryDevice()
+* blockIfDifferentDevice()
+
+Use available Expo/React Native device APIs if already installed.
+If new package is required, explain before installing.
+If packages are not available, create a temporary demo device ID stored locally, but structure the code so it can later be replaced with real device fingerprinting.
+
+Important:
+Comment clearly that true production-grade device fingerprinting must be implemented with backend verification and secure device identifiers later.
+
+==================================================
+5. DEVICE ACCESS FLOW
+=====================
+
+Implement or prepare this flow:
+
+First login:
+
+1. Student logs in.
+2. App checks if the user has a registered primary device.
+3. If no primary device exists, register current device as primary.
+4. Allow access.
+
+Next login from same device:
+
+1. Student logs in.
+2. App compares current device ID with registered primary device ID.
+3. If it matches, allow access.
+
+Login from another device:
+
+1. Student logs in.
+2. App compares current device ID with registered primary device ID.
+3. If it does not match, block access.
+4. Show message:
+   “This account is already linked to another device.”
+
+Device reset:
+Do not allow automatic reset now.
+Instead, show:
+Arabic:
+“لتغيير الجهاز، تواصل مع الدعم الفني.”
+English:
+“To change your device, please contact support.”
+
+Later, admin/support can approve device reset.
+
+==================================================
+6. READER ACCESS PROTECTION
+===========================
+
+Before opening any book in the reader, check:
+
+* User is logged in
+* User role is student
+* Internet connection is available
+* Device is authorized
+* Book is purchased or borrowed
+* License is valid
+* Book is not currently lent out by the owner
+
+For MVP/demo:
+If real licenses are not implemented, simulate the checks using local purchasedBooks/mock library state.
+
+Important:
+Remove any behavior that allows opening a book directly from the reader route without purchase/library ownership.
+
+If the user tries to open:
+
+* /reader/:bookId
+  without owning/borrowing the book:
+  Show an access denied screen:
+  Arabic:
+  “لا يمكنك فتح هذا الكتاب. يجب شراء الكتاب أو استعارته أولاً.”
+  English:
+  “You cannot open this book. You must purchase or borrow it first.”
+
+==================================================
+7. NO DOWNLOAD / NO EXPORT UI
+=============================
+
+Make sure the reader UI does not show any:
+
+* Download button
+* Export button
+* Share file button
+* Open in external app button
+* Print button
+
+If there is any current button or option that implies file download/export, remove it or disable it.
+
+The only allowed actions inside the reader:
+
+* Read
+* Next/previous page
+* Zoom
+* Bookmark
+* Highlight
+* Notes
+* Pen/eraser annotations
+* Search if available
+* Return to library
+
+==================================================
+8. WATERMARK INSIDE READER
+==========================
+
+Add or improve visible watermark overlay on every book page.
+
+Watermark should include:
+
+* Warqless
+* Student email or user ID
+* Demo License / License ID
+* Date/time if easy
+
+Example:
+Warqless — [student@example.com](mailto:student@example.com) — Demo License
+
+Arabic example:
+Warqless — [student@example.com](mailto:student@example.com) — ترخيص تجريبي
+
+The watermark should be:
+
+* Semi-transparent
+* Repeated or positioned in a way that discourages screenshots
+* Not too annoying for reading
+* Visible enough to discourage leaks
+
+==================================================
+9. SCREENSHOT PROTECTION IF POSSIBLE
+====================================
+
+If the current stack supports screenshot prevention, especially on Android, add it.
+
+For example:
+
+* Android FLAG_SECURE or equivalent if available
+* Expo-compatible screenshot prevention if already supported
+
+If this requires new packages, explain first before installing.
+
+If not possible right now, add a clear TODO comment and create the security structure for it later.
+
+Important:
+Do not claim screenshot protection is complete if it is only simulated.
+
+==================================================
+10. IMPLEMENTATION PRIORITY
+===========================
+
+Please work in this order:
+
+1. Inspect the current mobile app structure.
+2. Improve bottom navigation with iOS glass style.
+3. Add safe-area friendly mobile navigation.
+4. Create device access helper functions.
+5. Add online access check placeholder.
+6. Add one-device-only demo logic.
+7. Add reader access guard.
+8. Remove any download/export style actions.
+9. Add/improve watermark in reader.
+10. Add clear blocked/access denied screens.
+11. Keep everything lightweight for Replit Free Plan.
+
+==================================================
+11. EXPECTED OUTPUT
+===================
+
+When finished, reply with:
+
+1. Files changed
+2. What UI improvements were made
+3. How the glass navigation works
+4. How the device lock works in this MVP
+5. How to test login from the same device
+6. How to test blocked access from another device if possible
+7. How reader access protection works
+8. What is still simulated/demo-only
+9. What needs real backend implementation later
+10. Any packages added, if any
+
+==================================================
+12. IMPORTANT LIMITATIONS TO DOCUMENT
+=====================================
+
+Please clearly document that this is still MVP/demo protection.
+
+Real production protection later must include:
+
+* Backend device registration
+* Server-side license verification
+* Secure session tokens
+* Secure file streaming
+* No public book URLs
+* Real device reset approval by admin/support
+* Signed short-lived file/page access
+* Watermark generated server-side
+* Stronger anti-screenshot measures where platform allows
+
+But for now, build the clean mobile structure and demo logic so the app behaves like:
+
+* one account = one device
+* internet required
+* no download
+* reader only opens purchased/borrowed books
+* visible watermark on content
+
+Final reminder:
+Focus on the Warqless student mobile app.
+Keep it lightweight for Replit Free Plan.
+Do not overbuild.
+Do not break admin/publisher dashboards.
+Do not add heavy backend features yet.

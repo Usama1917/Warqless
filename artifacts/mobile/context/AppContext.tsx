@@ -1,3 +1,11 @@
+/**
+ * AppContext — MVP / DEMO AUTH
+ *
+ * Authentication is DEMO-ONLY: any valid-looking email + any password works.
+ * Device registration is simulated via AsyncStorage UUID.
+ * Replace with real backend auth + server-side device registration before production.
+ */
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
@@ -14,8 +22,13 @@ import {
   MOCK_PURCHASED_BOOKS,
   PurchasedBook,
 } from "@/data/mockData";
+import {
+  getCurrentDeviceId,
+  getPrimaryDeviceId,
+  registerPrimaryDevice,
+} from "@/services/deviceService";
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;
@@ -25,13 +38,20 @@ interface User {
   devicesCount: number;
 }
 
+export type DeviceStatus =
+  | "checking"
+  | "allowed"
+  | "blocked_different_device"
+  | "unknown";
+
 interface AppContextValue {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  deviceStatus: DeviceStatus;
   purchasedBooks: PurchasedBook[];
   borrowedBooks: BorrowedBook[];
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<"ok" | "invalid" | "device_blocked">;
   register: (
     name: string,
     email: string,
@@ -40,17 +60,9 @@ interface AppContextValue {
   ) => Promise<boolean>;
   logout: () => void;
   purchaseBook: (book: Book) => Promise<void>;
-  updateReadingProgress: (
-    bookId: string,
-    page: number,
-    progress: number
-  ) => void;
+  updateReadingProgress: (bookId: string, page: number, progress: number) => void;
   toggleBookmark: (bookId: string, page: number) => void;
-  lendBook: (
-    bookId: string,
-    borrowerPhone: string,
-    days: number
-  ) => Promise<boolean>;
+  lendBook: (bookId: string, borrowerPhone: string, days: number) => Promise<boolean>;
   returnBorrowedBook: (bookId: string) => void;
 }
 
@@ -68,6 +80,7 @@ const MOCK_USER: User = {
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>("unknown");
   const [purchasedBooks, setPurchasedBooks] =
     useState<PurchasedBook[]>(MOCK_PURCHASED_BOOKS);
   const [borrowedBooks, setBorrowedBooks] =
@@ -79,7 +92,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         const stored = await AsyncStorage.getItem("warqless_session");
         if (stored) {
           const session = JSON.parse(stored);
-          setUser(session.user);
+          const loggedUser: User = session.user;
+          // Verify device on session restore
+          const currentDeviceId = await getCurrentDeviceId();
+          const primaryDeviceId = await getPrimaryDeviceId(loggedUser.id);
+          if (!primaryDeviceId) {
+            // No device registered — register this one silently
+            await registerPrimaryDevice(loggedUser.id);
+            setDeviceStatus("allowed");
+          } else if (currentDeviceId === primaryDeviceId) {
+            setDeviceStatus("allowed");
+          } else {
+            setDeviceStatus("blocked_different_device");
+            // Don't restore session if device mismatch
+            await AsyncStorage.removeItem("warqless_session");
+            setIsLoading(false);
+            return;
+          }
+          setUser(loggedUser);
         }
       } catch {}
       setIsLoading(false);
@@ -88,18 +118,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (email: string, _password: string): Promise<boolean> => {
-      await new Promise((r) => setTimeout(r, 1200));
-      if (email.includes("@")) {
-        const loggedUser = { ...MOCK_USER, email };
-        setUser(loggedUser);
-        await AsyncStorage.setItem(
-          "warqless_session",
-          JSON.stringify({ user: loggedUser })
-        );
-        return true;
+    async (email: string, _password: string): Promise<"ok" | "invalid" | "device_blocked"> => {
+      await new Promise((r) => setTimeout(r, 1000));
+
+      // DEMO: any valid email format works
+      if (!email.includes("@")) return "invalid";
+
+      const loggedUser: User = { ...MOCK_USER, email };
+
+      // Device check
+      const currentDeviceId = await getCurrentDeviceId();
+      const primaryDeviceId = await getPrimaryDeviceId(loggedUser.id);
+
+      if (!primaryDeviceId) {
+        // First login — register this device as primary
+        await registerPrimaryDevice(loggedUser.id);
+        setDeviceStatus("allowed");
+      } else if (currentDeviceId === primaryDeviceId) {
+        setDeviceStatus("allowed");
+      } else {
+        // Different device — block access
+        setDeviceStatus("blocked_different_device");
+        return "device_blocked";
       }
-      return false;
+
+      setUser(loggedUser);
+      await AsyncStorage.setItem(
+        "warqless_session",
+        JSON.stringify({ user: loggedUser })
+      );
+      return "ok";
     },
     []
   );
@@ -111,7 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       phone: string,
       _password: string
     ): Promise<boolean> => {
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise((r) => setTimeout(r, 1200));
       const newUser: User = {
         id: "user-" + Date.now(),
         name,
@@ -120,6 +168,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         grade: "Grade 12",
         devicesCount: 1,
       };
+      // Register this device as primary for the new user
+      await registerPrimaryDevice(newUser.id);
+      setDeviceStatus("allowed");
       setUser(newUser);
       await AsyncStorage.setItem(
         "warqless_session",
@@ -132,11 +183,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     setUser(null);
+    setDeviceStatus("unknown");
     await AsyncStorage.removeItem("warqless_session");
   }, []);
 
   const purchaseBook = useCallback(async (book: Book) => {
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 800));
     const purchased: PurchasedBook = {
       ...book,
       purchaseDate: new Date().toISOString().split("T")[0],
@@ -190,7 +242,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       _borrowerPhone: string,
       days: number
     ): Promise<boolean> => {
-      await new Promise((r) => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 800));
       const book = purchasedBooks.find((b) => b.id === bookId);
       if (!book || !book.lendingEnabled) return false;
       const returnDate = new Date();
@@ -199,8 +251,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         ...book,
         borrowDate: new Date().toISOString().split("T")[0],
         returnDate: returnDate.toISOString().split("T")[0],
-        ownerId: user?.id || "",
-        ownerName: user?.name || "",
+        ownerId: user?.id ?? "",
+        ownerName: user?.name ?? "",
         isLentOut: true,
         borrowerName: "Friend",
       };
@@ -220,6 +272,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        deviceStatus,
         purchasedBooks,
         borrowedBooks,
         login,

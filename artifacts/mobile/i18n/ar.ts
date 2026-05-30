@@ -209,6 +209,25 @@ const ar: TranslationKeys = {
     highlight: "تظليل",
   },
 
+  // Content protection screens
+  protection: {
+    offlineTitle: "مطلوب اتصال بالإنترنت",
+    offlineDesc: "يجب الاتصال بالإنترنت لفتح الكتب والتحقق من الترخيص.",
+    offlineRetry: "إعادة المحاولة",
+    deviceBlockedTitle: "جهاز غير مسجّل",
+    deviceBlockedDesc: "هذا الحساب مرتبط بجهاز آخر. لا يمكن فتح الحساب إلا من جهاز واحد فقط.",
+    deviceChangeInfo: "لتغيير الجهاز، تواصل مع الدعم الفني.",
+    contactSupport: "تواصل مع الدعم",
+    accessDeniedTitle: "الوصول مرفوض",
+    accessDeniedDesc: "لا يمكنك فتح هذا الكتاب. يجب شراء الكتاب أو استعارته أولاً.",
+    lentOutTitle: "الكتاب غير متاح",
+    lentOutDesc: "لقد أعرت هذا الكتاب. سيتوفر مجدداً عند إعادته من المستعير.",
+    backToLibrary: "العودة إلى المكتبة",
+    browseStore: "تصفح المتجر",
+    licenseLabel: "مرخّص لـ",
+    demoLicense: "ترخيص تجريبي",
+  },
+
   // Book types
   bookTypes: {
     revision: "مراجعة",

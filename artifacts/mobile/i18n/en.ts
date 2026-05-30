@@ -207,6 +207,25 @@ const en = {
     highlight: "Highlight",
   },
 
+  // Content protection screens
+  protection: {
+    offlineTitle: "Internet Required",
+    offlineDesc: "Internet connection is required to open books and verify your license.",
+    offlineRetry: "Try Again",
+    deviceBlockedTitle: "Device Mismatch",
+    deviceBlockedDesc: "This account is linked to another device. It can only be used on one device.",
+    deviceChangeInfo: "To change your device, please contact support.",
+    contactSupport: "Contact Support",
+    accessDeniedTitle: "Access Denied",
+    accessDeniedDesc: "You cannot open this book. You must purchase or borrow it first.",
+    lentOutTitle: "Book Unavailable",
+    lentOutDesc: "You have lent this book out. It will be available again when the borrower returns it.",
+    backToLibrary: "Back to Library",
+    browseStore: "Browse Store",
+    licenseLabel: "Licensed to",
+    demoLicense: "Demo License",
+  },
+
   // Book types
   bookTypes: {
     revision: "Revision",
@@ -240,4 +259,9 @@ const en = {
 } as const;
 
 export default en;
-export type TranslationKeys = typeof en;
+
+// DeepString maps every leaf string type to `string`, so that Arabic (or any
+// other language) can satisfy TranslationKeys without needing to match the
+// exact English literal values.
+type DeepString<T> = T extends string ? string : { [K in keyof T]: DeepString<T[K]> };
+export type TranslationKeys = DeepString<typeof en>;

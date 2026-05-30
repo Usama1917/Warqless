@@ -18,6 +18,7 @@ import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { BOOKS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
+import { verifyBookLicense } from "@/services/licenseService";
 
 type ReadingMode = "light" | "dark" | "sepia";
 
@@ -83,7 +84,7 @@ export default function ReaderScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { purchasedBooks, borrowedBooks, updateReadingProgress, toggleBookmark } = useApp();
+  const { user, purchasedBooks, borrowedBooks, updateReadingProgress, toggleBookmark } = useApp();
   const { t, isRTL } = useLanguage();
 
   const book =
@@ -174,12 +175,90 @@ export default function ReaderScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  // ── Access Guard ────────────────────────────────────────────────────────────
+  // Verify the user owns or has borrowed this book before allowing reader access.
+  // In production this must be replaced with server-side license verification.
+  const purchasedIds = purchasedBooks.map((b) => b.id);
+  const borrowedIds = borrowedBooks.filter((b) => !b.isLentOut).map((b) => b.id);
+  const lentOutIds = borrowedBooks.filter((b) => b.isLentOut).map((b) => b.id);
+  const licenseCheck = verifyBookLicense(id ?? "", purchasedIds, borrowedIds, lentOutIds);
+
   if (!book) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Text style={{ color: colors.foreground }}>{t.common.error}</Text>
         <Pressable onPress={() => router.back()}>
           <Text style={{ color: colors.primary, marginTop: 12 }}>{t.common.back}</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (licenseCheck.valid === false) {
+    const isLentOut = licenseCheck.reason === "lent_out";
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background, paddingHorizontal: 32 }]}>
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: isLentOut ? colors.accent + "20" : "#EF444420",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 20,
+          }}
+        >
+          <Ionicons
+            name={isLentOut ? "swap-horizontal" : "lock-closed"}
+            size={32}
+            color={isLentOut ? colors.accent : "#EF4444"}
+          />
+        </View>
+        <Text
+          style={{
+            color: colors.foreground,
+            fontSize: 18,
+            fontFamily: "Inter_700Bold",
+            fontWeight: "700",
+            textAlign: "center",
+            marginBottom: 10,
+          }}
+        >
+          {isLentOut ? t.protection.lentOutTitle : t.protection.accessDeniedTitle}
+        </Text>
+        <Text
+          style={{
+            color: colors.mutedForeground,
+            fontSize: 14,
+            fontFamily: "Inter_400Regular",
+            textAlign: "center",
+            lineHeight: 22,
+            marginBottom: 28,
+          }}
+        >
+          {isLentOut ? t.protection.lentOutDesc : t.protection.accessDeniedDesc}
+        </Text>
+        <Pressable
+          onPress={() => router.replace("/(tabs)/library")}
+          style={{
+            backgroundColor: colors.primary,
+            paddingVertical: 14,
+            paddingHorizontal: 28,
+            borderRadius: 14,
+            marginBottom: 12,
+            minWidth: 200,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold", fontWeight: "600", fontSize: 15 }}>
+            {t.protection.backToLibrary}
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => router.replace("/(tabs)/browse")}>
+          <Text style={{ color: colors.primary, fontFamily: "Inter_500Medium", fontSize: 14, marginTop: 4 }}>
+            {t.protection.browseStore}
+          </Text>
         </Pressable>
       </View>
     );
@@ -343,9 +422,16 @@ export default function ReaderScreen() {
         />
       </View>
 
-      {/* Watermark */}
-      <View style={styles.watermark} pointerEvents="none">
-        <Text style={styles.watermarkText}>WARQLESS · Protected</Text>
+      {/* Watermark — user-stamped, tiled, semi-transparent
+           In production: generate server-side with signed license ID */}
+      <View style={styles.watermarkOverlay} pointerEvents="none">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <View key={i} style={[styles.watermarkTile, { top: `${14 + i * 16}%` as any }]}>
+            <Text style={styles.watermarkText}>
+              Warqless · {user?.email ?? "demo@warqless.com"} · {t.protection.demoLicense}
+            </Text>
+          </View>
+        ))}
       </View>
 
       {/* Page content */}
@@ -620,18 +706,25 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 2,
   },
-  watermark: {
+  watermarkOverlay: {
     position: "absolute",
-    bottom: 120,
-    right: 20,
-    opacity: 0.05,
+    inset: 0,
     pointerEvents: "none" as any,
+    overflow: "hidden",
+  },
+  watermarkTile: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    opacity: 0.08,
   },
   watermarkText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
-    transform: [{ rotate: "-30deg" }],
-    color: "#000",
+    transform: [{ rotate: "-25deg" }],
+    color: "#1A4A7C",
+    letterSpacing: 0.5,
   },
   pageContent: {
     paddingHorizontal: 24,

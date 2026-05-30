@@ -1,0 +1,3 @@
+- [i18n type pattern](i18n-type-pattern.md) — Use DeepString<typeof en> for TranslationKeys so Arabic translations don't fail literal-type checks
+- [device service](device-service.md) — One-device-only logic in services/deviceService.ts uses AsyncStorage UUID; login() returns "ok"|"invalid"|"device_blocked"
+- [glass tab bar](glass-tab-bar.md) — GlassTabBar custom tabBar component; navigation prop typed as `any` to avoid @react-navigation/bottom-tabs import conflict

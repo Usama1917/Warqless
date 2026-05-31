@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
+  Animated,
   FlatList,
   Platform,
   Pressable,
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { CategoryChip } from "@/components/CategoryChip";
 import { EmptyState } from "@/components/EmptyState";
 import { useApp } from "@/context/AppContext";
@@ -21,10 +23,16 @@ function LibraryBookCard({ book }: { book: any }) {
   const colors = useColors();
   const router = useRouter();
   const { t, isRTL } = useLanguage();
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 200, friction: 12 }).start();
+  const onPressOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 12 }).start();
 
   return (
+    <Animated.View style={{ transform: [{ scale }] }}>
     <Pressable
       onPress={() => router.push(`/reader/${book.id}`)}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       style={[styles.bookCard, { backgroundColor: colors.card, borderColor: colors.border }]}
     >
       <View style={[styles.cover, { backgroundColor: book.coverGradient[0] }]}>
@@ -93,6 +101,7 @@ function LibraryBookCard({ book }: { book: any }) {
         />
       </View>
     </Pressable>
+    </Animated.View>
   );
 }
 

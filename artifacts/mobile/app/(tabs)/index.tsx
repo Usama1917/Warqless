@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { BookCard } from "@/components/BookCard";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useApp } from "@/context/AppContext";
@@ -175,53 +176,60 @@ export default function HomeScreen() {
       </LinearGradient>
 
       {/* Offers */}
-      <View style={styles.section}>
-        <SectionHeader title={t.home.activeOffers} subtitle={t.home.limitedTime} />
-        <FlatList
-          data={FEATURED_OFFERS}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(o) => o.id}
-          contentContainerStyle={{ paddingHorizontal: 16 }}
-          renderItem={({ item }) => <OfferBanner offer={item} />}
-        />
-      </View>
+      <AnimatedEntrance delay={0}>
+        <View style={styles.section}>
+          <SectionHeader title={t.home.activeOffers} subtitle={t.home.limitedTime} />
+          <FlatList
+            data={FEATURED_OFFERS}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(o) => o.id}
+            contentContainerStyle={{ paddingHorizontal: 16 }}
+            renderItem={({ item }) => <OfferBanner offer={item} />}
+          />
+        </View>
+      </AnimatedEntrance>
 
       {/* Continue Reading */}
       {continueReading.length > 0 && (
-        <View style={styles.section}>
-          <SectionHeader
-            title={t.home.continueReading}
-            subtitle={t.home.pickUp}
-            seeAllRoute="/(tabs)/library"
-            seeAllLabel={t.home.seeAll}
-          />
-          <View style={styles.continueList}>
-            {continueReading.slice(0, 3).map((b) => (
-              <ContinueReadingCard key={b.id} book={b} />
-            ))}
+        <AnimatedEntrance delay={60}>
+          <View style={styles.section}>
+            <SectionHeader
+              title={t.home.continueReading}
+              subtitle={t.home.pickUp}
+              seeAllRoute="/(tabs)/library"
+              seeAllLabel={t.home.seeAll}
+            />
+            <View style={styles.continueList}>
+              {continueReading.slice(0, 3).map((b) => (
+                <ContinueReadingCard key={b.id} book={b} />
+              ))}
+            </View>
           </View>
-        </View>
+        </AnimatedEntrance>
       )}
 
       {/* Featured Books */}
-      <View style={styles.section}>
-        <SectionHeader
-          title={t.home.featuredBooks}
-          subtitle={t.home.handpicked}
-          seeAllRoute="/(tabs)/browse"
-          seeAllLabel={t.home.seeAll}
-        />
-        <View style={styles.featuredList}>
-          {featuredBooks.slice(0, 4).map((b) => (
-            <BookCard key={b.id} book={b} variant="featured" />
-          ))}
+      <AnimatedEntrance delay={120}>
+        <View style={styles.section}>
+          <SectionHeader
+            title={t.home.featuredBooks}
+            subtitle={t.home.handpicked}
+            seeAllRoute="/(tabs)/browse"
+            seeAllLabel={t.home.seeAll}
+          />
+          <View style={styles.featuredList}>
+            {featuredBooks.slice(0, 4).map((b) => (
+              <BookCard key={b.id} book={b} variant="featured" />
+            ))}
+          </View>
         </View>
-      </View>
+      </AnimatedEntrance>
 
       {/* Browse by Grade */}
-      <View style={styles.section}>
-        <SectionHeader title={t.home.byGrade} />
+      <AnimatedEntrance delay={180}>
+        <View style={styles.section}>
+          <SectionHeader title={t.home.byGrade} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gradeRow}>
           {GRADES.map((g) => (
             <Pressable
@@ -233,61 +241,68 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </ScrollView>
-      </View>
+        </View>
+      </AnimatedEntrance>
 
       {/* Popular Books */}
-      <View style={styles.section}>
-        <SectionHeader
-          title={t.home.popularBooks}
-          subtitle={t.home.trending}
-          seeAllRoute="/(tabs)/browse"
-          seeAllLabel={t.home.seeAll}
-        />
-        <FlatList
-          data={popularBooks}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(b) => b.id}
-          contentContainerStyle={{ paddingHorizontal: 11 }}
-          renderItem={({ item }) => (
-            <View style={{ width: 160 }}>
-              <BookCard book={item} variant="grid" />
-            </View>
-          )}
-        />
-      </View>
-
-      {/* Browse by Subject */}
-      <View style={styles.section}>
-        <SectionHeader title={t.home.bySubject} />
-        <View style={styles.subjectGrid}>
-          {SUBJECTS.slice(0, 6).map((s) => (
-            <Pressable
-              key={s}
-              onPress={() => router.push({ pathname: "/(tabs)/browse", params: { subject: s } })}
-              style={[styles.subjectChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
-            >
-              <Ionicons name="book-outline" size={16} color={colors.primary} />
-              <Text style={[styles.subjectText, { color: colors.foreground }]}>{s}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {/* New Releases */}
-      {newBooks.length > 0 && (
+      <AnimatedEntrance delay={240}>
         <View style={styles.section}>
           <SectionHeader
-            title={t.home.newReleases}
+            title={t.home.popularBooks}
+            subtitle={t.home.trending}
             seeAllRoute="/(tabs)/browse"
             seeAllLabel={t.home.seeAll}
           />
-          <View style={[styles.newList, { paddingHorizontal: 16 }]}>
-            {newBooks.map((b) => (
-              <BookCard key={b.id} book={b} variant="horizontal" />
+          <FlatList
+            data={popularBooks}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(b) => b.id}
+            contentContainerStyle={{ paddingHorizontal: 11 }}
+            renderItem={({ item }) => (
+              <View style={{ width: 160 }}>
+                <BookCard book={item} variant="grid" />
+              </View>
+            )}
+          />
+        </View>
+      </AnimatedEntrance>
+
+      {/* Browse by Subject */}
+      <AnimatedEntrance delay={300}>
+        <View style={styles.section}>
+          <SectionHeader title={t.home.bySubject} />
+          <View style={styles.subjectGrid}>
+            {SUBJECTS.slice(0, 6).map((s) => (
+              <Pressable
+                key={s}
+                onPress={() => router.push({ pathname: "/(tabs)/browse", params: { subject: s } })}
+                style={[styles.subjectChip, { backgroundColor: colors.secondary, borderColor: colors.border }]}
+              >
+                <Ionicons name="book-outline" size={16} color={colors.primary} />
+                <Text style={[styles.subjectText, { color: colors.foreground }]}>{s}</Text>
+              </Pressable>
             ))}
           </View>
         </View>
+      </AnimatedEntrance>
+
+      {/* New Releases */}
+      {newBooks.length > 0 && (
+        <AnimatedEntrance delay={360}>
+          <View style={styles.section}>
+            <SectionHeader
+              title={t.home.newReleases}
+              seeAllRoute="/(tabs)/browse"
+              seeAllLabel={t.home.seeAll}
+            />
+            <View style={[styles.newList, { paddingHorizontal: 16 }]}>
+              {newBooks.map((b) => (
+                <BookCard key={b.id} book={b} variant="horizontal" />
+              ))}
+            </View>
+          </View>
+        </AnimatedEntrance>
       )}
     </ScrollView>
   );

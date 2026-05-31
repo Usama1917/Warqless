@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
@@ -84,6 +85,7 @@ export default function AuthScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Logo */}
+        <AnimatedEntrance delay={0} dy={20}>
         <View style={styles.logoWrap}>
           <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
             <Ionicons name="library" size={32} color="#fff" />
@@ -91,6 +93,7 @@ export default function AuthScreen() {
           <Text style={[styles.logoText, { color: colors.foreground }]}>Warqless</Text>
           <Text style={[styles.tagline, { color: colors.mutedForeground }]}>{t.auth.tagline}</Text>
         </View>
+        </AnimatedEntrance>
 
         {/* Tab switcher */}
         <View

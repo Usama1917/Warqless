@@ -3,15 +3,15 @@
  *
  * Visual design:
  * - Floating glass capsule above safe area with soft shadow
- * - Active tab shows a white frosted-glass segment (iOS segmented control feel)
- * - Inactive tabs: muted gray icon + small label
- * - Smooth spring animations on tab switch and press
- * - Full RTL support when Arabic is active
+ * - A single shared white indicator SLIDES between tabs (iOS segmented control)
+ * - Icon + label animate color and opacity on tab change
+ * - Press: scale-down haptic feedback on the pressed tab
+ * - Full RTL support: routes reversed, indicator slides in reverse
  */
 
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -26,17 +26,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
-// ── Icon map ────────────────────────────────────────────────────────────────
+// ── Icon map ─────────────────────────────────────────────────────────────────
 
 const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
-  index:    { active: "home",         inactive: "home-outline"    },
-  browse:   { active: "search",       inactive: "search-outline"  },
-  library:  { active: "library",      inactive: "library-outline" },
-  borrowed: { active: "repeat",       inactive: "repeat"          },
-  account:  { active: "person",       inactive: "person-outline"  },
+  index:    { active: "home",    inactive: "home-outline"    },
+  browse:   { active: "search",  inactive: "search-outline"  },
+  library:  { active: "library", inactive: "library-outline" },
+  borrowed: { active: "repeat",  inactive: "repeat"          },
+  account:  { active: "person",  inactive: "person-outline"  },
 };
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type TabRoute     = { key: string; name: string };
 type TabDescriptor = { options: { tabBarLabel?: unknown; title?: string } };
@@ -57,57 +57,40 @@ function TabItem({
   onLongPress,
   isDark,
 }: {
-  route:      string;
-  isFocused:  boolean;
-  label:      string;
-  onPress:    () => void;
+  route:       string;
+  isFocused:   boolean;
+  label:       string;
+  onPress:     () => void;
   onLongPress: () => void;
-  isDark:     boolean;
+  isDark:      boolean;
 }) {
   const colors = useColors();
 
-  // Press scale
-  const pressScale = useRef(new Animated.Value(1)).current;
-
-  // Active segment background
-  const segOpacity = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
-  const segScale   = useRef(new Animated.Value(isFocused ? 1 : 0.82)).current;
-
-  // Icon/label color
+  const pressScale   = useRef(new Animated.Value(1)).current;
   const labelOpacity = useRef(new Animated.Value(isFocused ? 1 : 0.44)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(segOpacity, {
-        toValue: isFocused ? 1 : 0,
-        useNativeDriver: true,
-        tension: 68,
-        friction: 10,
-      }),
-      Animated.spring(segScale, {
-        toValue: isFocused ? 1 : 0.82,
-        useNativeDriver: true,
-        tension: 68,
-        friction: 10,
-      }),
-      Animated.spring(labelOpacity, {
-        toValue: isFocused ? 1 : 0.44,
-        useNativeDriver: true,
-        tension: 68,
-        friction: 10,
-      }),
-    ]).start();
+    Animated.spring(labelOpacity, {
+      toValue:         isFocused ? 1 : 0.44,
+      useNativeDriver: true,
+      tension:         80,
+      friction:        11,
+    }).start();
   }, [isFocused]);
 
   const handlePressIn = () =>
-    Animated.spring(pressScale, { toValue: 0.87, useNativeDriver: true, tension: 200, friction: 12 }).start();
+    Animated.spring(pressScale, {
+      toValue: 0.87, useNativeDriver: true, tension: 220, friction: 13,
+    }).start();
+
   const handlePressOut = () =>
-    Animated.spring(pressScale, { toValue: 1,    useNativeDriver: true, tension: 200, friction: 12 }).start();
+    Animated.spring(pressScale, {
+      toValue: 1, useNativeDriver: true, tension: 220, friction: 13,
+    }).start();
 
   const icons = TAB_ICONS[route] ?? { active: "ellipse", inactive: "ellipse-outline" };
-
-  // Active segment colour: white in light, slate in dark
-  const segBg = isDark ? "rgba(255,255,255,0.13)" : "#FFFFFF";
+  const activeColor   = colors.primary;
+  const inactiveColor = isDark ? "rgba(235,235,245,0.55)" : "#8E8E93";
 
   return (
     <Pressable
@@ -120,48 +103,27 @@ function TabItem({
       accessibilityState={isFocused ? { selected: true } : {}}
       accessibilityLabel={label}
     >
-      <Animated.View style={[styles.tabInner, { transform: [{ scale: pressScale }] }]}>
-
-        {/* ── Active segment background ── */}
-        <Animated.View
-          style={[
-            styles.activeSeg,
-            {
-              backgroundColor: segBg,
-              opacity: segOpacity,
-              transform: [{ scale: segScale }],
-              // Segment shadow (web uses boxShadow, native uses shadow*)
-              ...(Platform.OS === "web"
-                ? ({ boxShadow: "0 2px 10px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.05)" } as object)
-                : {
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.10,
-                    shadowRadius: 6,
-                    elevation: 3,
-                  }),
-            },
-          ]}
-        />
-
-        {/* ── Icon ── */}
+      <Animated.View
+        style={[styles.tabInner, { transform: [{ scale: pressScale }] }]}
+      >
+        {/* Icon */}
         <Animated.View style={{ opacity: labelOpacity }}>
           <Ionicons
             name={(isFocused ? icons.active : icons.inactive) as any}
             size={21}
-            color={isFocused ? colors.primary : (isDark ? "rgba(235,235,245,0.6)" : "#8E8E93")}
+            color={isFocused ? activeColor : inactiveColor}
           />
         </Animated.View>
 
-        {/* ── Label ── */}
+        {/* Label */}
         <Animated.Text
           numberOfLines={1}
           style={[
             styles.tabLabel,
             {
-              color: isFocused ? colors.primary : (isDark ? "rgba(235,235,245,0.6)" : "#8E8E93"),
+              color:      isFocused ? activeColor : inactiveColor,
               fontFamily: isFocused ? "Inter_600SemiBold" : "Inter_400Regular",
-              opacity: labelOpacity,
+              opacity:    labelOpacity,
             },
           ]}
         >
@@ -172,39 +134,74 @@ function TabItem({
   );
 }
 
-// ── Main bar ─────────────────────────────────────────────────────────────────
+// ── Main bar ──────────────────────────────────────────────────────────────────
 
 export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
-  const insets    = useSafeAreaInsets();
-  const colors    = useColors();
+  const insets      = useSafeAreaInsets();
+  const colors      = useColors();
   const colorScheme = useColorScheme();
-  const isDark    = colorScheme === "dark";
-  const { isRTL } = useLanguage();
+  const isDark      = colorScheme === "dark";
+  const { isRTL }   = useLanguage();
 
-  const routes = isRTL ? [...state.routes].reverse() : state.routes;
+  const numTabs  = state.routes.length;
+  const routes   = isRTL ? [...state.routes].reverse() : state.routes;
   const resolveIndex = isRTL
-    ? (i: number) => state.routes.length - 1 - i
+    ? (i: number) => numTabs - 1 - i
     : (i: number) => i;
 
-  // Bar background colours
+  // ── Sliding indicator ─────────────────────────────────────────────────────
+  // `slideAnim` represents the visual tab index (0 = leftmost visible slot).
+  // In RTL the active route is mirrored, so visual index = (N-1 - realIndex).
+
+  const [tabW, setTabW] = useState(0);
+  const slideAnim = useRef(
+    new Animated.Value(
+      isRTL ? numTabs - 1 - state.index : state.index
+    )
+  ).current;
+
+  useEffect(() => {
+    const visualIdx = isRTL ? numTabs - 1 - state.index : state.index;
+    Animated.spring(slideAnim, {
+      toValue:         visualIdx,
+      useNativeDriver: true,
+      tension:         68,
+      friction:        10,
+    }).start();
+  }, [state.index, isRTL]);
+
+  const onTabsLayout = (e: any) => {
+    const w  = e.nativeEvent.layout.width;
+    const tw = (w - 12) / numTabs; // 12 = 6 padding each side
+    setTabW(tw);
+  };
+
+  // Translate X of the sliding indicator
+  const indicatorTranslateX = tabW > 0
+    ? slideAnim.interpolate({
+        inputRange:  Array.from({ length: numTabs }, (_, i) => i),
+        outputRange: Array.from({ length: numTabs }, (_, i) => 6 + tabW * i),
+      })
+    : new Animated.Value(6);
+
+  // ── Colours ───────────────────────────────────────────────────────────────
   const barBg = isDark
     ? "rgba(28,28,30,0.82)"
     : "rgba(242,242,247,0.82)";
   const barBorder = isDark
     ? "rgba(255,255,255,0.07)"
     : "rgba(0,0,0,0.06)";
+  const segBg = isDark ? "rgba(255,255,255,0.13)" : "#FFFFFF";
 
   const bottomGap = insets.bottom > 0 ? insets.bottom : 12;
 
   return (
-    <View
-      style={[styles.wrapper, { bottom: bottomGap, pointerEvents: "box-none" }]}
-    >
+    <View style={[styles.wrapper, { bottom: bottomGap, pointerEvents: "box-none" } as any]}>
       <View
         style={[
           styles.pill,
           {
-            borderColor: barBorder,
+            borderColor:     barBorder,
             backgroundColor: Platform.OS !== "web" ? "transparent" : barBg,
             ...(Platform.OS === "web"
               ? ({
@@ -215,11 +212,11 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
                     : "0 8px 32px rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.80) inset",
                 } as object)
               : {
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
+                  shadowColor:   "#000",
+                  shadowOffset:  { width: 0, height: 8 },
                   shadowOpacity: isDark ? 0.35 : 0.12,
-                  shadowRadius: 24,
-                  elevation: 20,
+                  shadowRadius:  24,
+                  elevation:     20,
                 }),
           },
         ]}
@@ -237,18 +234,42 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
         <View
           style={[
             styles.topShine,
-            {
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.04)"
-                : "rgba(255,255,255,0.70)",
-            },
+            { backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.70)" },
           ]}
         />
 
-        {/* Tabs row */}
-        <View style={[styles.tabs, isRTL && styles.tabsRTL]}>
+        {/* Tabs area */}
+        <View
+          style={[styles.tabs, isRTL && styles.tabsRTL]}
+          onLayout={onTabsLayout}
+        >
+          {/* ── Shared sliding indicator ── */}
+          {tabW > 0 && (
+            <Animated.View
+              style={[
+                styles.slidingIndicator,
+                {
+                  width:           tabW,
+                  backgroundColor: segBg,
+                  transform:       [{ translateX: indicatorTranslateX }],
+                  ...(Platform.OS === "web"
+                    ? ({
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.10), 0 0 0 0.5px rgba(0,0,0,0.05)",
+                      } as object)
+                    : {
+                        shadowColor:   "#000",
+                        shadowOffset:  { width: 0, height: 2 },
+                        shadowOpacity: 0.10,
+                        shadowRadius:  6,
+                        elevation:     3,
+                      }),
+                },
+              ]}
+            />
+          )}
+
           {routes.map((route: TabRoute, visIdx: number) => {
-            const realIdx  = resolveIndex(visIdx);
+            const realIdx   = resolveIndex(visIdx);
             const { options } = descriptors[route.key];
             const isFocused = state.index === realIdx;
 
@@ -287,59 +308,60 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    left: 16,
-    right: 16,
-    zIndex: 100,
+    left:     16,
+    right:    16,
+    zIndex:   100,
   },
   pill: {
     borderRadius: 36,
-    borderWidth: 1,
-    overflow: "hidden",
+    borderWidth:  1,
+    overflow:     "hidden",
   },
   topShine: {
-    position: "absolute",
-    top: 0,
-    left: 16,
-    right: 16,
-    height: 1,
+    position:     "absolute",
+    top:          0,
+    left:         16,
+    right:        16,
+    height:       1,
     borderRadius: 1,
   },
   tabs: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection:  "row",
+    alignItems:     "center",
     paddingHorizontal: 6,
-    paddingVertical: 6,
-    zIndex: 2,
+    paddingVertical:   6,
+    zIndex:         2,
   },
   tabsRTL: {
     flexDirection: "row-reverse",
   },
-  tabItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabInner: {
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    minWidth: 52,
-    position: "relative",
-  },
-  activeSeg: {
-    position: "absolute",
-    inset: 0,
+  slidingIndicator: {
+    position:     "absolute",
+    top:          6,
+    left:         0,
+    bottom:       6,
     borderRadius: 26,
   },
+  tabItem: {
+    flex:            1,
+    alignItems:      "center",
+    justifyContent:  "center",
+  },
+  tabInner: {
+    alignItems:      "center",
+    justifyContent:  "center",
+    gap:             2,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    minWidth:        52,
+  },
   tabLabel: {
-    fontSize: 10,
+    fontSize:      10,
     letterSpacing: 0.1,
   },
 });

@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { EmptyState } from "@/components/EmptyState";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -167,6 +168,7 @@ export default function AccountScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Profile Header */}
+      <AnimatedEntrance delay={0} dy={24}>
       <View
         style={[styles.profileHeader, { paddingTop: topPad + 20, backgroundColor: colors.primary }]}
       >
@@ -196,34 +198,38 @@ export default function AccountScreen() {
           </View>
         </View>
       </View>
+      </AnimatedEntrance>
 
       {/* Language */}
-      <View style={styles.section}>
-        <SectionTitle title={t.account.sectionPreferences} />
-        <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View
-            style={[
-              styles.menuItem,
-              {
-                borderBottomColor: colors.border,
-                flexDirection: isRTL ? "row-reverse" : "row",
-              },
-            ]}
-          >
-            <View style={[styles.menuIconWrap, { backgroundColor: colors.secondary }]}>
-              <Ionicons name="language-outline" size={18} color={colors.primary} />
+      <AnimatedEntrance delay={80}>
+        <View style={styles.section}>
+          <SectionTitle title={t.account.sectionPreferences} />
+          <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.menuItem,
+                {
+                  borderBottomColor: colors.border,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
+              ]}
+            >
+              <View style={[styles.menuIconWrap, { backgroundColor: colors.secondary }]}>
+                <Ionicons name="language-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.menuContent}>
+                <Text style={[styles.menuLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                  {t.account.language}
+                </Text>
+              </View>
+              <LanguageSwitcher />
             </View>
-            <View style={styles.menuContent}>
-              <Text style={[styles.menuLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
-                {t.account.language}
-              </Text>
-            </View>
-            <LanguageSwitcher />
           </View>
         </View>
-      </View>
+      </AnimatedEntrance>
 
       {/* Account */}
+      <AnimatedEntrance delay={160}>
       <View style={styles.section}>
         <SectionTitle title={t.account.sectionAccount} />
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -362,6 +368,7 @@ export default function AccountScreen() {
       </View>
 
       <Text style={[styles.version, { color: colors.mutedForeground }]}>{t.account.version}</Text>
+      </AnimatedEntrance>
     </ScrollView>
   );
 }

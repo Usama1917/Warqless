@@ -1,0 +1,238 @@
+I want you to apply a new iPhone-style Apple glass bottom tab bar to the Warqless student mobile app.
+
+Important:
+Do not change the app features.
+Do not break the current student app.
+Do not break admin or publisher dashboards.
+Only replace/refine the student mobile bottom tab bar style.
+
+I already have a prepared component concept called AppleGlassTabBar.tsx.
+
+The goal is to make the Warqless student bottom navigation match this style:
+
+* Floating rounded capsule
+* Frosted glass / translucent iOS look
+* Active tab inside a soft rounded pill
+* Arabic labels centered under icons
+* Active tab is blue
+* Inactive tabs are dark
+* Smooth press animation
+* Safe area support
+* RTL support
+* Premium iPhone-like polish
+
+==================================================
+
+1. FIRST INSPECT CURRENT PROJECT
+   ==================================================
+
+Before changing anything:
+
+1. Inspect the current Warqless mobile app tab layout.
+2. Find the existing bottom tab bar component.
+3. Find where Expo Router Tabs are configured.
+4. Check if the current project already has:
+
+   * expo-blur
+   * @expo/vector-icons
+   * react-native-safe-area-context
+5. Check current Arabic/RTL language setup.
+6. Check current tab route names.
+
+Do not install packages unless absolutely necessary.
+If a required package is missing, tell me first and explain why.
+
+==================================================
+2. APPLY THE NEW TAB BAR SAFELY
+===============================
+
+Create or update a component:
+
+Suggested path:
+components/AppleGlassTabBar.tsx
+
+or use the existing components folder/path if different.
+
+Use this component style:
+
+* wrapper absolute bottom
+* left/right spacing around 16
+* height around 86
+* borderRadius around 43
+* frosted BlurView background if available
+* fallback translucent background if BlurView is not available
+* soft border
+* soft shadow
+* pill-shaped active tab background
+* icon above label
+* optional small active dot
+* smooth press scale animation
+* active tab fade/scale animation
+* Arabic labels by default
+* RTL support
+* safe area support
+
+==================================================
+3. WARQLESS TABS
+================
+
+Adapt the component to the current Warqless tabs.
+
+Current Warqless tabs should remain the same routes, but with the new visual style.
+
+Use the correct route names from the project.
+
+Expected tabs may include:
+
+* Home
+* Browse
+* Library
+* Borrowed
+* Account
+
+Arabic labels:
+
+* الرئيسية
+* الكتب
+* مكتبتي
+* المستعار
+* الحساب
+
+Icons suggestion:
+
+* Home: home-outline / home
+* Browse: search-outline / search
+* Library: library-outline / library
+* Borrowed: swap-horizontal-outline / swap-horizontal
+* Account: person-outline / person
+
+If the current routes are different, map the icons and labels correctly without breaking navigation.
+
+==================================================
+4. INTEGRATE WITH EXPO ROUTER TABS
+==================================
+
+In the student tabs layout, use the custom tab bar:
+
+<Tabs
+screenOptions={{
+headerShown: false,
+tabBarStyle: { display: "none" },
+}}
+tabBar={(props) => <AppleGlassTabBar {...props} />}
+/>
+
+But adjust this based on the current project structure.
+
+Important:
+Do not create duplicate tab bars.
+Do not leave the old tab bar visible behind it.
+Do not break tab navigation.
+Do not break RTL order.
+
+==================================================
+5. KEEP CURRENT FUNCTIONALITY
+=============================
+
+The following must continue working:
+
+* Student Home
+* Browse
+* Library
+* Borrowed
+* Account
+* Reader access guard
+* Device management screen
+* Security/account screens
+* Arabic language support
+* English language support if available
+* Device binding demo logic
+* Watermark reader logic
+
+Only the bottom bar visual/navigation should be improved.
+
+==================================================
+6. DESIGN EXACTNESS
+===================
+
+Make the bar closer to the reference style:
+
+* Overall bar looks like one large iOS capsule.
+* Active tab appears as a rounded pill inside the capsule.
+* Active pill should have a soft white translucent background.
+* The selected icon and label should be blue.
+* Inactive icons and labels should be black/dark.
+* The bar background should be very light gray/white glass.
+* It should feel soft, modern, clean, and Apple-like.
+* It should not look like a normal Android material tab bar.
+* It should not look heavy or flashy.
+
+==================================================
+7. ANIMATION
+============
+
+Add smooth animation:
+
+* Press scale down/up
+* Active tab fade/scale
+* Smooth color change where possible
+* Optional active dot fade
+* No aggressive bounce
+* Keep animation short and premium
+
+Use React Native Animated if possible.
+Avoid heavy animation libraries unless already installed.
+
+==================================================
+8. SAFE AREA
+============
+
+Make sure the tab bar:
+
+* Does not overlap iPhone home indicator.
+* Floats above the bottom safe area.
+* Works on small mobile screens.
+* Does not cover important content too much.
+
+If needed, add bottom padding to tab screens so content does not hide behind the floating tab bar.
+
+==================================================
+9. DARK MODE / FALLBACK
+=======================
+
+If the current app supports dark mode:
+
+* Make the tab bar look good in dark mode too.
+
+If BlurView is not available:
+
+* Use fallback translucent background.
+
+Do not crash if BlurView is unavailable.
+
+==================================================
+10. EXPECTED OUTPUT
+===================
+
+When done, reply with:
+
+1. Files changed
+2. Where the tab bar component was added/updated
+3. Where it was connected to Expo Router Tabs
+4. Whether any packages were added
+5. How the tab labels/icons were mapped
+6. How RTL is handled
+7. How safe area is handled
+8. How to test it
+9. Any limitations
+
+==================================================
+11. FINAL REMINDER
+==================
+
+Apply the AppleGlassTabBar style to Warqless.
+Do not rewrite the app.
+Do not change app logic.
+Do not break the existing security features.
+Do not break admin/publisher dashboards.
+Only improve the student mobile bottom navigation to match the iPhone-style floating capsule reference.

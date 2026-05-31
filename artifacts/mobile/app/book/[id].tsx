@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { BookCard } from "@/components/BookCard";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -107,6 +108,7 @@ export default function BookDetailScreen() {
       </Pressable>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+        <AnimatedEntrance delay={0} dy={12}>
         {/* Book cover hero */}
         <View style={[styles.hero, { backgroundColor: book.coverGradient[0] }]}>
           <View style={[styles.heroShine, { backgroundColor: book.coverAccent + "20" }]} />
@@ -279,6 +281,7 @@ export default function BookDetailScreen() {
             </View>
           )}
         </View>
+        </AnimatedEntrance>
       </ScrollView>
 
       {/* Bottom CTA */}

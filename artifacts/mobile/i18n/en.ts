@@ -1,5 +1,4 @@
 const en = {
-  // Tabs
   tabs: {
     home: "Home",
     browse: "Browse",
@@ -8,7 +7,6 @@ const en = {
     account: "Account",
   },
 
-  // Home screen
   home: {
     welcome: "Welcome to",
     hello: "Hello,",
@@ -31,7 +29,6 @@ const en = {
     validUntil: "Valid until",
   },
 
-  // Browse screen
   browse: {
     title: "Browse Books",
     searchPlaceholder: "Search books, subjects, publishers...",
@@ -47,7 +44,6 @@ const en = {
     noBooksDesc: "Try adjusting your filters or search with different keywords.",
   },
 
-  // Library screen
   library: {
     title: "My Library",
     signInTitle: "Sign in to access your library",
@@ -69,7 +65,6 @@ const en = {
     complete: "Complete",
   },
 
-  // Borrowed screen
   borrowed: {
     title: "Borrowed Books",
     subtitle: "Books you've borrowed from others",
@@ -96,7 +91,6 @@ const en = {
     infoText: "When you lend a book, you cannot read it until the borrower returns it or the lending period expires.",
   },
 
-  // Account screen
   account: {
     signInTitle: "No account yet",
     signInDesc: "Sign in or create a free account to manage your library, devices, and purchases.",
@@ -130,7 +124,6 @@ const en = {
     sectionPreferences: "PREFERENCES",
   },
 
-  // Auth screen
   auth: {
     tagline: "Your books. No paper.",
     signIn: "Sign In",
@@ -154,7 +147,6 @@ const en = {
     privacyLink: "Privacy Policy",
   },
 
-  // Book detail screen
   book: {
     aboutTitle: "About this book",
     features: "What's included",
@@ -184,7 +176,6 @@ const en = {
     ok: "OK",
   },
 
-  // Reader screen
   reader: {
     tableOfContents: "Table of Contents",
     bookmarks: "Bookmarks",
@@ -207,7 +198,6 @@ const en = {
     highlight: "Highlight",
   },
 
-  // Content protection screens
   protection: {
     offlineTitle: "Internet Required",
     offlineDesc: "Internet connection is required to open books and verify your license.",
@@ -226,7 +216,42 @@ const en = {
     demoLicense: "Demo License",
   },
 
-  // Book types
+  device: {
+    sectionTitle: "Account & Device Security",
+    sectionSubtitle: "This account works on one device only",
+    linkedDevice: "Linked Device",
+    deviceStatus: "Device Status",
+    manageDevice: "Manage Device",
+    lastVerification: "Last Verification",
+    active: "Active",
+    verified: "Verified",
+    screenTitle: "My Device",
+    protectionDesc: "To protect books and prevent content leaks, your Warqless account can only be opened on one device.",
+    deviceId: "Device ID",
+    platform: "Platform",
+    registeredOn: "Registered On",
+    lastVerified: "Last Verified",
+    justNow: "Just now",
+    securityRulesTitle: "Content Protection",
+    rule1: "Account cannot be opened on more than one device",
+    rule2: "Books cannot be downloaded as PDF files",
+    rule3: "Internet required to verify your license",
+    rule4: "To change device, you must send a support request",
+    requestChange: "Request Device Change",
+    requestTitle: "Request Device Change",
+    requestDesc: "A support request will be sent to review your device change. The device will not be changed automatically to protect your account.",
+    reasonPlaceholder: "Write the reason for changing your device...",
+    sendRequest: "Send Request",
+    cancel: "Cancel",
+    requestSent: "Your device change request has been submitted. Support will contact you shortly.",
+    requestPending: "Request Pending",
+    requestPendingDesc: "You already have a pending device change request.",
+    demoNote: "Demo mode: device lock uses browser storage. Clear site data to reset for testing.",
+    noDeviceRegistered: "No device registered yet",
+    thisDevice: "This Device",
+    statusActive: "Active & Verified",
+  },
+
   bookTypes: {
     revision: "Revision",
     textbook: "Textbook",
@@ -236,7 +261,6 @@ const en = {
     bundle: "Bundle",
   },
 
-  // Common
   common: {
     loading: "Loading...",
     error: "An error occurred",
@@ -260,8 +284,5 @@ const en = {
 
 export default en;
 
-// DeepString maps every leaf string type to `string`, so that Arabic (or any
-// other language) can satisfy TranslationKeys without needing to match the
-// exact English literal values.
 type DeepString<T> = T extends string ? string : { [K in keyof T]: DeepString<T[K]> };
 export type TranslationKeys = DeepString<typeof en>;

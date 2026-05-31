@@ -1,7 +1,6 @@
 import type { TranslationKeys } from "./en";
 
 const ar: TranslationKeys = {
-  // Tabs
   tabs: {
     home: "الرئيسية",
     browse: "تصفح",
@@ -10,7 +9,6 @@ const ar: TranslationKeys = {
     account: "الحساب",
   },
 
-  // Home screen
   home: {
     welcome: "مرحباً بك في",
     hello: "مرحباً،",
@@ -33,7 +31,6 @@ const ar: TranslationKeys = {
     validUntil: "صالح حتى",
   },
 
-  // Browse screen
   browse: {
     title: "تصفح الكتب",
     searchPlaceholder: "ابحث عن الكتب أو المواد أو الناشرين...",
@@ -49,7 +46,6 @@ const ar: TranslationKeys = {
     noBooksDesc: "حاول تعديل التصفية أو البحث بكلمات مختلفة.",
   },
 
-  // Library screen
   library: {
     title: "مكتبتي",
     signInTitle: "سجّل الدخول للوصول إلى مكتبتك",
@@ -71,7 +67,6 @@ const ar: TranslationKeys = {
     complete: "مكتمل",
   },
 
-  // Borrowed screen
   borrowed: {
     title: "الكتب المستعارة",
     subtitle: "الكتب التي استعرتها من الآخرين",
@@ -98,7 +93,6 @@ const ar: TranslationKeys = {
     infoText: "عند إعارة كتاب، لن تتمكن من قراءته حتى يُعيده المستعير أو تنتهي مدة الإعارة.",
   },
 
-  // Account screen
   account: {
     signInTitle: "ليس لديك حساب بعد",
     signInDesc: "سجّل الدخول أو أنشئ حساباً مجانياً لإدارة مكتبتك وأجهزتك ومشترياتك.",
@@ -132,7 +126,6 @@ const ar: TranslationKeys = {
     sectionPreferences: "التفضيلات",
   },
 
-  // Auth screen
   auth: {
     tagline: "كتبك. بلا ورق.",
     signIn: "تسجيل الدخول",
@@ -156,7 +149,6 @@ const ar: TranslationKeys = {
     privacyLink: "سياسة الخصوصية",
   },
 
-  // Book detail screen
   book: {
     aboutTitle: "عن هذا الكتاب",
     features: "ماذا يتضمن",
@@ -186,7 +178,6 @@ const ar: TranslationKeys = {
     ok: "حسناً",
   },
 
-  // Reader screen
   reader: {
     tableOfContents: "فهرس المحتوى",
     bookmarks: "الإشارات المرجعية",
@@ -209,7 +200,6 @@ const ar: TranslationKeys = {
     highlight: "تظليل",
   },
 
-  // Content protection screens
   protection: {
     offlineTitle: "مطلوب اتصال بالإنترنت",
     offlineDesc: "يجب الاتصال بالإنترنت لفتح الكتب والتحقق من الترخيص.",
@@ -228,7 +218,42 @@ const ar: TranslationKeys = {
     demoLicense: "ترخيص تجريبي",
   },
 
-  // Book types
+  device: {
+    sectionTitle: "أمان الحساب والجهاز",
+    sectionSubtitle: "هذا الحساب يعمل على جهاز واحد فقط",
+    linkedDevice: "الجهاز المرتبط",
+    deviceStatus: "حالة الجهاز",
+    manageDevice: "إدارة الجهاز",
+    lastVerification: "آخر تحقق",
+    active: "نشط",
+    verified: "جهاز موثّق",
+    screenTitle: "أجهزتي",
+    protectionDesc: "لحماية الكتب ومنع تسريب المحتوى، يمكن فتح حساب Warqless من جهاز واحد فقط.",
+    deviceId: "رقم الجهاز",
+    platform: "النظام",
+    registeredOn: "تاريخ التسجيل",
+    lastVerified: "آخر تحقق",
+    justNow: "الآن",
+    securityRulesTitle: "حماية المحتوى",
+    rule1: "لا يمكن فتح الحساب على أكثر من جهاز",
+    rule2: "لا يمكن تحميل الكتب كملفات PDF",
+    rule3: "يجب الاتصال بالإنترنت للتحقق من الترخيص",
+    rule4: "لتغيير الجهاز، يجب إرسال طلب للدعم الفني",
+    requestChange: "طلب تغيير الجهاز",
+    requestTitle: "طلب تغيير الجهاز",
+    requestDesc: "سيتم إرسال طلب إلى الدعم الفني لمراجعة تغيير الجهاز. لن يتم تغيير الجهاز تلقائيًا لحماية حسابك.",
+    reasonPlaceholder: "اكتب سبب تغيير الجهاز...",
+    sendRequest: "إرسال الطلب",
+    cancel: "إلغاء",
+    requestSent: "تم إرسال طلب تغيير الجهاز بنجاح. سيتواصل معك الدعم الفني.",
+    requestPending: "طلب قيد المراجعة",
+    requestPendingDesc: "لديك طلب تغيير جهاز قيد المراجعة بالفعل.",
+    demoNote: "وضع تجريبي: قفل الجهاز يعتمد على تخزين المتصفح. امسح بيانات الموقع للاختبار.",
+    noDeviceRegistered: "لم يتم تسجيل جهاز بعد",
+    thisDevice: "هذا الجهاز",
+    statusActive: "نشط وموثّق",
+  },
+
   bookTypes: {
     revision: "مراجعة",
     textbook: "كتاب مقرر",
@@ -238,7 +263,6 @@ const ar: TranslationKeys = {
     bundle: "حزمة",
   },
 
-  // Common
   common: {
     loading: "جارٍ التحميل...",
     error: "حدث خطأ",

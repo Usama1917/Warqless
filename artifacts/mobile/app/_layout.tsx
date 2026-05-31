@@ -34,6 +34,10 @@ function RootLayoutNav() {
         name="reader/[id]"
         options={{ headerShown: false, animation: "slide_from_bottom" }}
       />
+      <Stack.Screen
+        name="account/devices"
+        options={{ headerShown: false, animation: "slide_from_right" }}
+      />
     </Stack>
   );
 }

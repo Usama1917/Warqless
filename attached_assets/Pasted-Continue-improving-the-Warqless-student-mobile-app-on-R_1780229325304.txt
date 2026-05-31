@@ -1,0 +1,328 @@
+Continue improving the Warqless student mobile app on Replit Free Plan.
+
+You already implemented:
+
+* iOS-style glassmorphism bottom navigation
+* One-device-only demo lock
+* Reader access guard
+* Watermark inside reader
+* Online/license placeholder services
+* Access denied screen for unpurchased books
+
+Now I want you to build the next most important lightweight MVP feature:
+
+Device Management + Device Reset Request inside the student Account area.
+
+Project:
+Warqless
+
+Main rule:
+One account must work on one physical device only.
+
+This is very important:
+Not one email.
+Not one phone number.
+One physical device only.
+
+==================================================
+
+1. GOAL
+   ==================================================
+
+Create a student-facing device management experience.
+
+The student should clearly understand:
+
+* This account is linked to one device only.
+* The current device is the registered device.
+* If the student wants to change the device, they must contact support or request a device reset.
+* Device reset should not happen automatically in the MVP.
+
+This is still a Replit Free MVP, so keep it lightweight and mock/demo-based.
+
+Do not build a heavy backend.
+Do not install unnecessary packages.
+Do not break the existing mobile app.
+Do not break admin/publisher dashboards.
+
+==================================================
+2. ACCOUNT PAGE UPDATE
+======================
+
+Update the student Account page.
+
+Add a new section/card called:
+
+Arabic:
+أمان الحساب والجهاز
+
+English:
+Account & Device Security
+
+Inside this section show:
+
+* Current device status
+* Registered device ID, partially masked
+* Device registered date if available
+* Last verification status
+* Button: Manage Device
+
+Arabic labels:
+
+* الجهاز المرتبط
+* حالة الجهاز
+* هذا الحساب يعمل على جهاز واحد فقط
+* إدارة الجهاز
+* آخر تحقق
+* نشط
+* جهاز موثّق
+
+English labels:
+
+* Linked Device
+* Device Status
+* This account works on one device only
+* Manage Device
+* Last Verification
+* Active
+* Verified Device
+
+==================================================
+3. DEVICE MANAGEMENT SCREEN
+===========================
+
+Create a new student screen/page:
+
+Suggested route:
+
+* /student/devices
+  or the correct route based on the current mobile app structure.
+
+This page should show:
+
+A) Header
+Arabic:
+أجهزتي
+
+English:
+My Device
+
+B) Explanation card
+Arabic:
+لحماية الكتب ومنع تسريب المحتوى، يمكن فتح حساب Warqless من جهاز واحد فقط.
+
+English:
+To protect books and prevent content leaks, your Warqless account can only be opened on one device.
+
+C) Current device card
+Show:
+
+* Device name, if available
+* Device ID, masked
+* Platform, if available
+* Registration date
+* Last verified date
+* Status: Active / Verified
+
+D) Security rules card
+Arabic:
+
+* لا يمكن فتح الحساب على أكثر من جهاز
+* لا يمكن تحميل الكتب كملفات PDF
+* يجب الاتصال بالإنترنت للتحقق من الترخيص
+* لتغيير الجهاز، يجب إرسال طلب للدعم الفني
+
+English:
+
+* The account cannot be opened on more than one device
+* Books cannot be downloaded as PDF files
+* Internet connection is required to verify your license
+* To change the device, you must send a support request
+
+E) Request device reset button
+Arabic:
+طلب تغيير الجهاز
+
+English:
+Request Device Change
+
+==================================================
+4. DEVICE RESET REQUEST FLOW
+============================
+
+When the student clicks “Request Device Change”:
+
+Show a modal or screen with:
+
+Arabic title:
+طلب تغيير الجهاز
+
+Arabic message:
+سيتم إرسال طلب إلى الدعم الفني لمراجعة تغيير الجهاز. لن يتم تغيير الجهاز تلقائيًا لحماية حسابك والكتب الرقمية.
+
+English title:
+Request Device Change
+
+English message:
+A request will be sent to support to review your device change. The device will not be changed automatically to protect your account and digital books.
+
+Fields:
+
+* Reason textarea
+  Arabic placeholder:
+  اكتب سبب تغيير الجهاز
+
+English placeholder:
+Write the reason for changing your device
+
+Buttons:
+
+* Send Request
+  Arabic:
+  إرسال الطلب
+
+* Cancel
+  Arabic:
+  إلغاء
+
+After submit:
+Show success message:
+
+Arabic:
+تم إرسال طلب تغيير الجهاز بنجاح. سيتواصل معك الدعم الفني.
+
+English:
+Your device change request has been submitted successfully. Support will contact you.
+
+For MVP:
+Save this request locally or in mock state.
+Do not actually reset the device.
+
+==================================================
+5. MOCK SUPPORT REQUEST
+=======================
+
+Create a lightweight mock support/device reset request object.
+
+Fields:
+
+* id
+* userId
+* userEmail
+* currentDeviceId
+* reason
+* status
+* createdAt
+
+Status:
+
+* pending
+* approved
+* rejected
+
+For now, after submit, status should be pending.
+
+If there is an existing mock support system, integrate with it.
+If not, create simple local/mock storage.
+
+==================================================
+6. ADMIN/SUPPORT OPTIONAL LIGHTWEIGHT VIEW
+==========================================
+
+If it is easy and does not add complexity, add a simple admin dashboard section or card for:
+
+Device Reset Requests
+
+Admin can see:
+
+* Student name/email
+* Masked device ID
+* Reason
+* Status
+* Date
+
+Buttons can be mock only:
+
+* Approve
+* Reject
+
+Important:
+Do not actually reset the device yet unless the existing structure makes it very easy.
+For now, this can be UI-only.
+
+If this takes too much work, skip admin view and focus on student device screen first.
+
+==================================================
+7. DEVICE LOCK TESTING UI
+=========================
+
+Add a small developer/demo note somewhere in the Device Management screen or README explaining how to test the one-device logic in the MVP.
+
+Example:
+
+* Login with [student@example.com](mailto:student@example.com)
+* The app registers this browser/device as the primary device
+* If local storage is changed or a different simulated device ID is used, access should be blocked
+* To reset in demo, clear local storage only during development
+
+Make sure this is clearly marked as demo-only.
+
+==================================================
+8. IMPORTANT PROTECTION LIMITATION NOTE
+=======================================
+
+Add a short note in code comments or README:
+
+This is MVP/demo protection.
+Production protection must later use:
+
+* Backend device registration
+* Server-side license verification
+* Secure tokens
+* Signed page access
+* Secure book rendering
+* No public PDF URLs
+* Admin-approved device reset
+* Server-side watermarking
+* Stronger anti-screenshot controls where platform allows
+
+==================================================
+9. UI DESIGN
+============
+
+Make the screen look premium and mobile-friendly.
+
+Style:
+
+* Same Warqless design system
+* Clean cards
+* Rounded corners
+* Soft shadows
+* iOS-style feel
+* Arabic RTL support
+* Works well with the new glass tab bar
+* Clear security icons
+* Simple and friendly wording
+
+Do not make it look scary.
+It should feel protective and trustworthy.
+
+==================================================
+10. EXPECTED OUTPUT
+===================
+
+When done, reply with:
+
+1. Files changed
+2. What was added to Account
+3. How the Device Management screen works
+4. How the reset request flow works
+5. What is mock/local only
+6. How to test it
+7. Any limitations
+8. Next recommended step after this
+
+Final reminder:
+Keep it lightweight for Replit Free Plan.
+Do not build a heavy backend now.
+Focus on completing the one-device-only experience visually and logically.

@@ -267,6 +267,55 @@ export default function AccountScreen() {
         </View>
       </View>
 
+      {/* Device Security card */}
+      <View style={styles.section}>
+        <SectionTitle title={t.device.sectionTitle} />
+        <Pressable
+          onPress={() => router.push("/account/devices")}
+          style={({ pressed }) => [
+            styles.deviceCard,
+            {
+              backgroundColor: pressed ? colors.primary + "F5" : colors.primary,
+              borderColor: colors.primary,
+            },
+          ]}
+        >
+          {/* top row */}
+          <View style={[styles.deviceCardRow, isRTL && { flexDirection: "row-reverse" }]}>
+            <View style={styles.deviceCardIcon}>
+              <Ionicons name="phone-portrait-outline" size={22} color="#fff" />
+            </View>
+            <View style={{ flex: 1, marginHorizontal: 12 }}>
+              <Text style={[styles.deviceCardTitle, isRTL && styles.rtlText]}>
+                {t.device.sectionTitle}
+              </Text>
+              <Text style={[styles.deviceCardSub, isRTL && styles.rtlText]}>
+                {t.device.sectionSubtitle}
+              </Text>
+            </View>
+            <Ionicons
+              name={isRTL ? "chevron-back" : "chevron-forward"}
+              size={16}
+              color="rgba(255,255,255,0.6)"
+            />
+          </View>
+
+          {/* status pills row */}
+          <View style={[styles.devicePillsRow, isRTL && { flexDirection: "row-reverse" }]}>
+            <View style={styles.devicePill}>
+              <View style={styles.devicePillDot} />
+              <Text style={styles.devicePillText}>{t.device.active}</Text>
+            </View>
+            <View style={[styles.devicePill, { backgroundColor: "rgba(255,255,255,0.12)" }]}>
+              <Ionicons name="shield-checkmark-outline" size={11} color="rgba(255,255,255,0.9)" />
+              <Text style={styles.devicePillText}>{t.device.verified}</Text>
+            </View>
+            <View style={{ flex: 1 }} />
+            <Text style={styles.deviceManageText}>{t.device.manageDevice}</Text>
+          </View>
+        </Pressable>
+      </View>
+
       <View style={styles.section}>
         <SectionTitle title={t.account.sectionSecurity} />
         <View style={[styles.menuGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -469,5 +518,68 @@ const styles = StyleSheet.create({
   rtlText: {
     textAlign: "right",
     writingDirection: "rtl",
+  },
+  deviceCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+  },
+  deviceCardRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  deviceCardIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deviceCardTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    color: "#fff",
+    marginBottom: 2,
+  },
+  deviceCardSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.65)",
+  },
+  devicePillsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  devicePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  devicePillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4ADE80",
+  },
+  devicePillText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.92)",
+  },
+  deviceManageText: {
+    marginLeft: "auto",
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.7)",
   },
 });

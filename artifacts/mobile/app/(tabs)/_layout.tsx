@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import React from "react";
 
-import { GlassTabBar } from "@/components/GlassTabBar";
+import { AppleGlassTabBar } from "@/components/AppleGlassTabBar";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function TabLayout() {
@@ -9,7 +9,7 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      tabBar={(props) => <GlassTabBar {...props} />}
+      tabBar={(props) => <AppleGlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}

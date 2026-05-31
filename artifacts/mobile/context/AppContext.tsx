@@ -27,6 +27,7 @@ import {
   getPrimaryDeviceId,
   registerPrimaryDevice,
 } from "@/services/deviceService";
+import { logSecurityEvent } from "@/services/securityEventService";
 
 export interface User {
   id: string;
@@ -134,11 +135,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         // First login — register this device as primary
         await registerPrimaryDevice(loggedUser.id);
         setDeviceStatus("allowed");
+        logSecurityEvent({
+          type: "device_registered",
+          severity: "low",
+          userId: loggedUser.id,
+          userName: loggedUser.name,
+          userEmail: loggedUser.email,
+          deviceId: currentDeviceId,
+          message: `First login. Device registered as primary device for account ${loggedUser.email}.`,
+        });
       } else if (currentDeviceId === primaryDeviceId) {
         setDeviceStatus("allowed");
+        logSecurityEvent({
+          type: "device_verified",
+          severity: "low",
+          userId: loggedUser.id,
+          userName: loggedUser.name,
+          userEmail: loggedUser.email,
+          deviceId: currentDeviceId,
+          message: `Login from registered primary device. Access granted.`,
+        });
       } else {
-        // Different device — block access
+        // Different device — block access permanently
+        // Production: backend is the source of truth for device binding.
+        // The app only provides device identity; server decides if access is allowed.
         setDeviceStatus("blocked_different_device");
+        logSecurityEvent({
+          type: "device_blocked",
+          severity: "critical",
+          userId: loggedUser.id,
+          userName: loggedUser.name,
+          userEmail: loggedUser.email,
+          deviceId: currentDeviceId,
+          message: `Login attempt from unregistered device. Account is permanently bound to a different device. Correct email/password does not override device binding.`,
+          metadata: { blockedDeviceId: currentDeviceId, registeredDeviceId: primaryDeviceId },
+        });
         return "device_blocked";
       }
 

@@ -12,6 +12,7 @@ import StudentsPage from "@/pages/students";
 import OrdersPage from "@/pages/orders";
 import LendingPage from "@/pages/lending";
 import SettingsPage from "@/pages/settings";
+import SecurityPage from "@/pages/security";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/orders" component={() => <ProtectedRoute component={OrdersPage} />} />
       <Route path="/lending" component={() => <ProtectedRoute component={LendingPage} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
+      <Route path="/security" component={() => <ProtectedRoute component={SecurityPage} adminOnly />} />
       <Route component={RootRedirect} />
     </Switch>
   );

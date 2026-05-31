@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   BookMarked,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { label: "Students", href: "/students", icon: Users, adminOnly: true },
   { label: "Orders", href: "/orders", icon: ShoppingCart, adminOnly: false },
   { label: "Lending", href: "/lending", icon: ArrowLeftRight, adminOnly: false },
+  { label: "Security", href: "/security", icon: ShieldAlert, adminOnly: true },
   { label: "Settings", href: "/settings", icon: Settings, adminOnly: false },
 ];
 
@@ -50,6 +52,7 @@ export function Sidebar() {
   const [isOrders] = useRoute("/orders");
   const [isLending] = useRoute("/lending");
   const [isSettings] = useRoute("/settings");
+  const [isSecurity] = useRoute("/security");
 
   const activeMap: Record<string, boolean> = {
     "/dashboard": isDashboard,
@@ -58,6 +61,7 @@ export function Sidebar() {
     "/students": isStudents,
     "/orders": isOrders,
     "/lending": isLending,
+    "/security": isSecurity,
     "/settings": isSettings,
   };
 

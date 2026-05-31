@@ -1,0 +1,608 @@
+Continue developing Warqless on Replit Free Plan.
+
+Project:
+Warqless
+
+Main idea:
+Warqless is a protected digital educational book platform. Students buy books and read them only inside the app. Publishers and admins need to trust that the content is protected as much as possible.
+
+Now I want you to implement a complete lightweight security-control structure for the MVP and connect every important student-side security action to the Admin dashboard preview.
+
+Very important:
+Keep this suitable for Replit Free Plan.
+Do not build a heavy production backend yet.
+Do not install unnecessary packages.
+Do not break the student app.
+Do not break the admin/publisher dashboards.
+Use mock/local/shared demo data if needed.
+The goal is to make the product security flow visible and demo-ready.
+
+==================================================
+
+1. MAIN GOAL
+   ==================================================
+
+I want Warqless to clearly demonstrate these security principles:
+
+1. No direct book download.
+2. No public PDF/file URL.
+3. Books open only inside the Warqless reader.
+4. The account is permanently linked to one physical device.
+5. This is NOT just one active session.
+6. If the account is linked to Device A, it must not open on Device B even if Device A is logged out.
+7. Changing the device requires a support/admin reset request.
+8. Every book opening must pass a license/access check.
+9. Reader must not open unpurchased or unborrowed books.
+10. Watermark must appear inside the reader.
+11. Screenshot/screen recording protection should be added where possible.
+12. Any suspicious event should be logged and visible in Admin dashboard.
+13. Every important student action should have a related admin preview/control.
+
+==================================================
+2. IMPORTANT CLARIFICATION — DEVICE BINDING
+===========================================
+
+Do NOT implement this as only “one active session at a time.”
+
+I do NOT mean:
+
+* Device A is logged in
+* Device B tries to log in at the same time
+* Device B is blocked only because Device A is currently active
+
+That is not enough.
+
+I want permanent device binding:
+
+One account = one registered physical device.
+
+Rules:
+
+* First login from Device A registers Device A as the Primary Device.
+* After that, the account can only open from Device A.
+* If Device A logs out, Device B must still be blocked.
+* If there is no active session on Device A, Device B must still be blocked.
+* If Device B has the correct email and password, Device B must still be blocked.
+* The app must not auto-replace the primary device.
+* Device change must require an admin/support reset request.
+
+Required blocked message:
+
+Arabic:
+هذا الحساب مرتبط بجهاز آخر. لا يمكن فتح الحساب إلا من جهاز واحد فقط.
+
+English:
+This account is linked to another device. It can only be opened from one device.
+
+For this Replit MVP:
+
+* Simulate permanent device binding using the current device service/local storage/shared mock state.
+* Make the logic and labels very clear.
+* Add code comments explaining that production must enforce this server-side.
+
+For production later:
+
+* Backend must be the source of truth.
+* App only provides device identity.
+* Backend decides if the device is allowed or blocked.
+
+==================================================
+3. STUDENT-SIDE SECURITY FEATURES
+=================================
+
+Improve or add these student-side security features:
+
+A) No Download / No Export
+Make sure the reader has no:
+
+* Download button
+* Export button
+* Share file button
+* Print button
+* Open in external app button
+
+Allowed reader actions only:
+
+* Read
+* Next page
+* Previous page
+* Zoom
+* Bookmark
+* Highlight
+* Notes
+* Pen/eraser annotation
+* Search if already available
+* Back to Library
+
+B) Reader Access Guard
+Before opening any book, verify:
+
+* User is logged in
+* User role is student
+* Online access is available, or simulated as available in MVP
+* Device is the registered primary device
+* Book is purchased or borrowed
+* License is valid
+* Book is not currently lent out by the owner
+
+If the book is not purchased/borrowed, show:
+
+Arabic:
+لا يمكنك فتح هذا الكتاب. يجب شراء الكتاب أو استعارته أولاً.
+
+English:
+You cannot open this book. You must purchase or borrow it first.
+
+C) Internet Required Message
+If online check fails, show:
+
+Arabic:
+يجب الاتصال بالإنترنت لفتح الكتب والتحقق من الترخيص.
+
+English:
+Internet connection is required to open books and verify your license.
+
+D) Watermark
+Every reader page must show a visible repeated watermark.
+
+Watermark should include:
+
+* Warqless
+* Student email or user ID
+* License ID or Demo License
+* Device ID masked if possible
+* Date/time if easy
+
+Example:
+Warqless · [student@example.com](mailto:student@example.com) · Demo License · Device dee2••••34e3
+
+Arabic example:
+Warqless · [student@example.com](mailto:student@example.com) · ترخيص تجريبي · جهاز dee2••••34e3
+
+Watermark should be:
+
+* Semi-transparent
+* Repeated/tiled
+* Diagonal if possible
+* Visible enough to discourage screenshots
+* Not too strong to ruin reading
+
+E) Screenshot / Screen Recording Protection
+If the current stack supports it without heavy changes:
+
+* Add screenshot/screen recording prevention on the Reader screen.
+* Use Expo-compatible screen capture prevention if already available or safe.
+* Activate it only on sensitive reader screens.
+* Disable it when leaving the reader if needed.
+
+If not possible:
+
+* Add a clean TODO structure/comment.
+* Do not claim it is fully implemented if it is simulated.
+
+F) Screenshot Detection / Security Event
+If screenshot detection is available:
+
+* Log a security event when a screenshot is detected.
+* Show warning message to the user.
+
+Arabic warning:
+تم رصد محاولة تصوير الشاشة. حماية المحتوى مفعلة.
+
+English warning:
+Screenshot attempt detected. Content protection is active.
+
+If not technically possible now:
+
+* Add a mock/demo button or simulated event only if useful for admin demo, clearly marked as demo.
+
+==================================================
+4. SECURITY EVENT SYSTEM
+========================
+
+Create a lightweight MVP Security Event system.
+
+Use mock/shared/local data if needed.
+
+Create events for:
+
+1. device_registered
+   When account is linked to first device.
+
+2. device_verified
+   When the same registered device successfully logs in.
+
+3. device_blocked
+   When another device tries to open the same account.
+
+4. device_reset_requested
+   When student requests device change.
+
+5. device_reset_approved
+   When admin approves reset request.
+
+6. device_reset_rejected
+   When admin rejects reset request.
+
+7. reader_opened
+   When a student opens a purchased/borrowed book.
+
+8. reader_access_denied
+   When a student tries to open a book without purchase/borrow.
+
+9. license_check_failed
+   When access/license check fails.
+
+10. screenshot_attempt
+    When screenshot/screen recording is blocked or detected, if possible.
+
+11. suspicious_activity
+    For repeated blocked attempts or repeated reader denials.
+
+Security event fields:
+
+* id
+* type
+* severity
+* userId
+* userName
+* userEmail
+* bookId optional
+* bookTitle optional
+* deviceId masked
+* message
+* metadata optional
+* createdAt
+
+Severity levels:
+
+* low
+* medium
+* high
+* critical
+
+==================================================
+5. ADMIN DASHBOARD — CONNECT EVERYTHING
+=======================================
+
+Very important:
+I do not want student-side features that have no admin preview/control.
+
+Every important security action must appear in Admin dashboard.
+
+Add or improve Admin sections:
+
+A) Security Overview Page / Panel
+Admin should see:
+
+* Total security events
+* Device blocked attempts
+* Reader access denied attempts
+* Screenshot attempts
+* Pending device reset requests
+* High-risk events
+* Recent security events
+
+Suggested route:
+
+* /admin/security
+  or follow current admin routing structure.
+
+Arabic:
+الأمان والمراقبة
+
+English:
+Security & Monitoring
+
+B) Security Events Table
+Show:
+
+* Event type
+* Severity
+* Student name/email
+* Book title if available
+* Device ID masked
+* Message
+* Date/time
+* View details
+
+Use colored badges:
+
+* low = gray/blue
+* medium = amber
+* high = orange/red
+* critical = red/dark
+
+C) Security Event Details Modal
+When clicking event:
+Show:
+
+* Event ID
+* Event type
+* Severity
+* User info
+* Book info if available
+* Device info
+* Message
+* Metadata
+* Created date
+* Recommended admin action
+
+D) Device Reset Requests Page
+If not already built, build it.
+If already built, improve/connect it.
+
+Admin can see:
+
+* Student name/email
+* Current masked device ID
+* Reason
+* Status
+* Created date
+* Actions:
+
+  * Approve
+  * Reject
+  * View Details
+
+Statuses:
+
+* Pending
+* Approved
+* Rejected
+
+Arabic:
+
+* قيد المراجعة
+* تمت الموافقة
+* مرفوض
+
+E) Admin Approval / Reject Flow
+For MVP:
+
+* Approve/reject changes local/mock status.
+* Add a security event:
+
+  * device_reset_approved
+  * device_reset_rejected
+
+Do not automatically change the device unless safely supported by current mock structure.
+If you implement reset behavior:
+
+* It should clear the primary device binding only after admin approval.
+* The next login registers the new device.
+* Make this clearly demo-only.
+
+F) User Security Profile
+If easy, add a security section in student/user details inside admin dashboard:
+
+* Registered device
+* Device status
+* Last verified
+* Blocked attempts
+* Security events count
+* Device reset request history
+
+If this is too heavy, add only a simple View Details modal from security events.
+
+==================================================
+6. PUBLISHER DASHBOARD PREVIEW
+==============================
+
+Publishers should not see private student device details.
+
+But publisher can see aggregated anti-piracy/security insights for their books.
+
+If easy, add a simple publisher security/analytics card:
+
+Publisher sees:
+
+* Protected reader opens
+* Access denied attempts for their books
+* Screenshot attempts for their books, aggregated
+* Suspicious activity count, aggregated
+* Watermark enabled status
+
+Do not show:
+
+* full device ID
+* private user details
+* sensitive admin-only events
+
+If this is too much now, skip it and focus on Admin dashboard.
+
+==================================================
+7. ADMIN PREVIEW CHECKLIST
+==========================
+
+Make sure these student-side actions have admin visibility:
+
+Student opens purchased book:
+
+* Create reader_opened event.
+* Admin Security Events shows it.
+
+Student tries to open unpurchased book:
+
+* Create reader_access_denied event.
+* Admin Security Events shows it.
+
+Student logs in from registered device:
+
+* Create device_verified event.
+* Admin Security Events shows it.
+
+Student tries another device:
+
+* Create device_blocked event.
+* Admin Security Events shows it.
+
+Student requests device change:
+
+* Create device_reset_requested event.
+* Admin Device Reset Requests shows it.
+* Admin Security Events shows it.
+
+Admin approves request:
+
+* Request status becomes approved.
+* Create device_reset_approved event.
+
+Admin rejects request:
+
+* Request status becomes rejected.
+* Create device_reset_rejected event.
+
+Screenshot attempt if possible:
+
+* Create screenshot_attempt event.
+* Admin Security Events shows it.
+
+License check fails:
+
+* Create license_check_failed event.
+* Admin Security Events shows it.
+
+==================================================
+8. REPLIT MVP IMPLEMENTATION RULES
+==================================
+
+Because this is Replit Free MVP:
+
+* Use lightweight services.
+* Use mock/shared local data where needed.
+* Keep code organized.
+* Do not add heavy backend.
+* Do not create complex database.
+* Do not install packages unless needed.
+* If a package is required, explain why before installing.
+* Do not break current flows.
+* Keep current UI working.
+* Keep admin/publisher dashboard working.
+* Keep student mobile app working.
+
+If student app and admin dashboard are in separate packages and cannot share local storage easily:
+
+* Create parallel mock security events in admin for demo.
+* Also create a clear shared service if possible.
+* Explain what is connected and what is mock-only.
+
+==================================================
+9. RECOMMENDED FILE / SERVICE STRUCTURE
+=======================================
+
+If it fits the current project, create or improve:
+
+services/deviceService.ts
+
+* getCurrentDeviceId()
+* getPrimaryDevice()
+* registerPrimaryDevice()
+* verifyPrimaryDevice()
+* requestDeviceReset()
+* approveDeviceReset()
+* rejectDeviceReset()
+
+services/licenseService.ts
+
+* verifyOnlineAccess()
+* verifyBookLicense()
+* verifyReaderAccess()
+
+services/securityEventService.ts
+
+* logSecurityEvent()
+* getSecurityEvents()
+* getSecurityEventStats()
+* getUserSecurityEvents()
+
+services/deviceResetService.ts
+
+* createDeviceResetRequest()
+* getDeviceResetRequests()
+* approveDeviceResetRequest()
+* rejectDeviceResetRequest()
+
+Admin pages:
+
+* SecurityMonitoring
+* DeviceResetRequests
+
+Student pages:
+
+* Account
+* Device Management
+* Reader
+
+Use existing patterns and naming if different.
+
+==================================================
+10. DOCUMENTATION / COMMENTS
+============================
+
+Add a clear note in README or comments:
+
+This is MVP/demo protection.
+
+Production protection must later use:
+
+* Backend enforced device binding
+* Server-side primary device record
+* Secure authentication tokens
+* Password hashing
+* Server-side license verification
+* Private file storage
+* Signed short-lived page access
+* No public PDF URLs
+* Encrypted book/page delivery
+* Admin-approved device reset
+* Server-side security event logging
+* Server-side watermark generation
+* Screenshot prevention where supported
+* Screenshot detection/logging where supported
+* Audit logs and suspicious activity scoring
+
+Make it clear:
+Client-side protection alone is not enough.
+The backend must be the source of truth.
+
+==================================================
+11. EXPECTED OUTPUT
+===================
+
+When finished, reply with:
+
+1. Files changed
+2. Student security features improved
+3. Device binding behavior
+4. Reader protection behavior
+5. Screenshot/screen recording protection status
+6. New security events system
+7. New admin pages/sections
+8. How student actions appear in admin
+9. How device reset request appears in admin
+10. What is still mock/demo-only
+11. How to test:
+
+    * login from registered device
+    * login from different device
+    * open purchased book
+    * try to open unpurchased book
+    * request device change
+    * approve/reject request in admin
+    * view security events
+12. Limitations
+13. Next recommended step
+
+==================================================
+12. FINAL REMINDER
+==================
+
+Do not overbuild.
+Do not build production backend yet.
+Keep it lightweight.
+But make the security story complete and visible:
+
+Student app security action → Security event → Admin dashboard preview/control.
+
+Nothing important should happen in the student app without an admin preview or admin control.

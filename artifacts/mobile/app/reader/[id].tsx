@@ -19,6 +19,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { BOOKS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 import { verifyBookLicense } from "@/services/licenseService";
+import { getCurrentDeviceId } from "@/services/deviceService";
+import { logSecurityEvent } from "@/services/securityEventService";
 
 type ReadingMode = "light" | "dark" | "sepia";
 
@@ -106,12 +108,53 @@ export default function ReaderScreen() {
   const [showToc, setShowToc] = useState(false);
 
   const toolbarOpacity = useRef(new Animated.Value(1)).current;
+  const securityEventLogged = useRef(false);
   const totalPages = book?.pages ?? 100;
   const pageIndex = Math.min(currentPage - 1, SAMPLE_PAGES.length - 1);
   const pageContent = SAMPLE_PAGES[pageIndex] ?? SAMPLE_PAGES[0];
   const isBookmarked = purchasedBook?.bookmarkedPages.includes(currentPage) ?? false;
 
   const modeStyle = READING_MODE_CONFIGS.find((m) => m.mode === readingMode) ?? READING_MODE_CONFIGS[0];
+
+  // Log security event once on mount
+  useEffect(() => {
+    if (securityEventLogged.current || !user) return;
+    securityEventLogged.current = true;
+    getCurrentDeviceId().then((deviceId) => {
+      if (licenseCheck.valid) {
+        logSecurityEvent({
+          type: "reader_opened",
+          severity: "low",
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          bookId: id ?? undefined,
+          bookTitle: book?.title,
+          deviceId,
+          message: `Reader opened for "${book?.title ?? id}". License and device verified.`,
+          metadata: { page: String(currentPage) },
+        });
+      } else {
+        const reason = licenseCheck.reason;
+        logSecurityEvent({
+          type: "reader_access_denied",
+          severity: "high",
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          bookId: id ?? undefined,
+          bookTitle: book?.title,
+          deviceId,
+          message:
+            reason === "lent_out"
+              ? `Reader access denied for "${book?.title ?? id}". Book is currently lent out.`
+              : `Reader access denied for "${book?.title ?? id}". Book not purchased or borrowed.`,
+          metadata: { reason: reason ?? "unknown" },
+        });
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const progress = Math.round((currentPage / totalPages) * 100);

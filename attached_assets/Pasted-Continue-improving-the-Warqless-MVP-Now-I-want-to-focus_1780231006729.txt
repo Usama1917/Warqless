@@ -1,0 +1,261 @@
+Continue improving the Warqless MVP.
+
+Now I want to focus on the overall app experience, animations, and Arabic preview.
+
+Project:
+Warqless
+
+Main goal:
+Make the whole app feel smoother, more premium, and closer to Apple-style interaction.
+
+I want every interaction in the app to feel soft, smooth, and polished.
+
+==================================================
+
+1. APP-WIDE SMOOTH ANIMATION SYSTEM
+   ==================================================
+
+Please add or improve smooth animations across the app.
+
+The animation style should feel:
+
+* Apple-like
+* Smooth
+* Soft
+* Premium
+* Natural
+* Not flashy
+* Not slow
+* Not annoying
+
+Every important UI interaction should have subtle motion.
+
+Apply smooth animations to:
+
+* Opening tabs
+* Closing tabs
+* Switching between bottom navigation tabs
+* Opening pages
+* Going back
+* Opening modals
+* Closing modals
+* Opening book details
+* Opening the reader
+* Closing the reader
+* Opening account/device screens
+* Opening admin dashboard pages if applicable
+* Cards appearing on screen
+* Buttons press feedback
+* Book cards hover/press feedback
+* Active tab changes
+* Search/filter panels
+* Empty states
+* Success messages
+* Warning/security messages
+
+Use spring animations where appropriate.
+Use fade + slide transitions for page changes.
+Use scale/opacity feedback for buttons and cards.
+Keep motion short and elegant.
+
+Avoid:
+
+* aggressive bouncing
+* childish animations
+* slow transitions
+* too many animations at the same time
+* animations that make the app feel heavy
+
+==================================================
+2. APPLE-STYLE MOTION DETAILS
+=============================
+
+Please refine interactions to feel closer to iOS.
+
+Examples:
+
+* Tab switch: active segment glides softly to the selected tab.
+* Pressing a tab: small scale down/up feedback.
+* Opening a modal: soft bottom sheet slide with fade overlay.
+* Closing a modal: smooth reverse transition.
+* Opening book details: card/page gently slides in.
+* Opening reader: smooth fade + slight scale.
+* Success messages: soft slide/fade in and out.
+* Security alerts: smooth but serious animation.
+* Device management screen: cards appear with small staggered animation.
+
+The app should feel like a real native mobile app, not a static web page.
+
+==================================================
+3. MOBILE TAB BAR ANIMATION
+===========================
+
+The bottom navigation already has an iPhone-style glass segmented pill.
+
+Please improve its animation:
+
+* Active tab indicator should glide smoothly between tabs.
+* Active white segment should animate its position instead of instantly changing.
+* Icon and label should animate color and scale.
+* Press feedback should be smooth and subtle.
+* RTL mode should animate correctly in reversed order.
+* Safe area spacing should remain correct.
+
+Keep the iPhone-style glass capsule shape.
+
+==================================================
+4. ARABIC PREVIEW VERSION
+=========================
+
+I want to see a full Arabic version of the app.
+
+Arabic should not be partial.
+
+Please make sure the student app can be previewed in Arabic clearly.
+
+Arabic requirements:
+
+* Arabic UI labels
+* RTL layout
+* Right-aligned Arabic text
+* Arabic bottom navigation labels
+* Arabic screen titles
+* Arabic buttons
+* Arabic empty states
+* Arabic error messages
+* Arabic security messages
+* Arabic device management screen
+* Arabic reader messages
+* Arabic account page
+* Arabic login/register screens if present
+
+Main Arabic labels:
+
+* الرئيسية
+* الكتب
+* مكتبتي
+* المستعار
+* الحساب
+* أجهزتي
+* أمان الحساب والجهاز
+* فتح الكتاب
+* شراء الكتاب
+* عرض التفاصيل
+* متابعة القراءة
+* تم إضافة الكتاب إلى مكتبتك
+* لا يمكنك فتح هذا الكتاب. يجب شراء الكتاب أو استعارته أولاً.
+* هذا الحساب مرتبط بجهاز آخر. لا يمكن فتح الحساب إلا من جهاز واحد فقط.
+* يجب الاتصال بالإنترنت لفتح الكتب والتحقق من الترخيص.
+* طلب تغيير الجهاز
+* إرسال الطلب
+* إلغاء
+* الدعم الفني
+
+Important:
+When Arabic is active, the whole student experience should feel naturally Arabic, not just translated text.
+
+==================================================
+5. LANGUAGE TOGGLE / ARABIC DEMO MODE
+=====================================
+
+If there is already a language switcher, improve it.
+
+If there is no clear language switcher, add a simple one in Account or Settings.
+
+Language options:
+
+* العربية
+* English
+
+When Arabic is selected:
+
+* Switch app direction to RTL if possible.
+* Use Arabic labels.
+* Mirror navigation order where appropriate.
+* Keep icons with directional meaning correct.
+* Save selected language in local storage/AsyncStorage.
+
+If full runtime RTL switching requires reload, show a clear note or handle it cleanly.
+
+For the demo, I want to easily preview the Arabic version.
+
+==================================================
+6. ADMIN DASHBOARD ARABIC PREVIEW
+=================================
+
+If it is lightweight and safe, add Arabic support or Arabic preview for important admin/security pages too.
+
+Priority Arabic admin pages:
+
+* Admin Overview
+* Security & Monitoring
+* Device Reset Requests
+* Books
+* Students
+
+If full admin Arabic support is too much right now:
+
+* Do not overbuild.
+* Focus first on the student Arabic version.
+* Then add Arabic labels to security/admin pages where easy.
+
+==================================================
+7. PERFORMANCE RULES
+====================
+
+Keep everything suitable for Replit Free Plan.
+
+Do not add heavy animation libraries unless already installed or clearly needed.
+
+Prefer existing animation tools in the project:
+
+* React Native Animated
+* Reanimated if already installed
+* CSS transitions on web
+* Existing animation utilities if already available
+
+If a new package is needed, explain why before installing.
+
+The app should stay fast and responsive.
+
+==================================================
+8. DESIGN QUALITY CHECKLIST
+===========================
+
+After improvements, check:
+
+* Does tab switching feel smooth?
+* Do modals open/close smoothly?
+* Do cards have soft press feedback?
+* Does the Arabic version look natural?
+* Is RTL layout correct?
+* Are Arabic labels complete?
+* Does the app still work in English?
+* Is the animation not too much?
+* Is performance still good?
+* Does the security/device flow still work?
+* Does the admin dashboard still work?
+
+==================================================
+9. EXPECTED OUTPUT
+==================
+
+When finished, reply with:
+
+1. Files changed
+2. Animation improvements added
+3. Tab bar animation improvements
+4. Modal/page transition improvements
+5. Arabic support improvements
+6. How to preview Arabic version
+7. What is still English-only, if anything
+8. Any performance considerations
+9. Any limitations
+10. Next recommended step
+
+Final reminder:
+Make Warqless feel smooth, premium, and Apple-like.
+Every tab opening/closing and every important interaction should have soft animation.
+I also want to clearly see a full Arabic version of the student app.
+Keep it lightweight for Replit Free.
+Do not break the existing security features or admin dashboard.

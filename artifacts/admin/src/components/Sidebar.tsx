@@ -12,17 +12,18 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useAdminLanguage } from "@/context/AdminLanguageContext";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
-  { label: "Books", href: "/books", icon: BookOpen, adminOnly: false },
-  { label: "Publishers", href: "/publishers", icon: Building2, adminOnly: true },
-  { label: "Students", href: "/students", icon: Users, adminOnly: true },
-  { label: "Orders", href: "/orders", icon: ShoppingCart, adminOnly: false },
-  { label: "Lending", href: "/lending", icon: ArrowLeftRight, adminOnly: false },
-  { label: "Security", href: "/security", icon: ShieldAlert, adminOnly: true },
-  { label: "Settings", href: "/settings", icon: Settings, adminOnly: false },
+  { labelKey: "dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: false },
+  { labelKey: "books", href: "/books", icon: BookOpen, adminOnly: false },
+  { labelKey: "publishers", href: "/publishers", icon: Building2, adminOnly: true },
+  { labelKey: "students", href: "/students", icon: Users, adminOnly: true },
+  { labelKey: "orders", href: "/orders", icon: ShoppingCart, adminOnly: false },
+  { labelKey: "lending", href: "/lending", icon: ArrowLeftRight, adminOnly: true },
+  { labelKey: "security", href: "/security", icon: ShieldAlert, adminOnly: true },
+  { labelKey: "settings", href: "/settings", icon: Settings, adminOnly: false },
 ];
 
 function NavItem({ label, href, icon: Icon, active }: { label: string; href: string; icon: React.ElementType; active: boolean }) {
@@ -45,6 +46,7 @@ function NavItem({ label, href, icon: Icon, active }: { label: string; href: str
 
 export function Sidebar() {
   const { user, logout } = useAuth();
+  const { t, isRTL } = useAdminLanguage();
   const [isDashboard] = useRoute("/dashboard");
   const [isBooks] = useRoute("/books");
   const [isPublishers] = useRoute("/publishers");
@@ -70,15 +72,17 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="w-60 shrink-0 flex flex-col h-screen bg-sidebar border-r border-sidebar-border">
+    <aside className={cn("w-60 shrink-0 flex flex-col h-screen bg-sidebar border-sidebar-border", isRTL ? "border-l" : "border-r")}>
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
         <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
           <BookMarked size={16} className="text-sidebar-primary-foreground" />
         </div>
         <div>
-          <div className="text-sidebar-foreground font-bold text-sm tracking-tight">Warqless</div>
-          <div className="text-sidebar-foreground/50 text-xs">Admin Panel</div>
+          <div className="text-sidebar-foreground font-bold text-sm tracking-tight">{t.app.name}</div>
+          <div className="text-sidebar-foreground/50 text-xs">
+            {user?.role === "publisher" ? t.app.publisherPanel : t.app.panel}
+          </div>
         </div>
       </div>
 
@@ -87,7 +91,7 @@ export function Sidebar() {
         {visibleItems.map((item) => (
           <NavItem
             key={item.href}
-            label={item.label}
+            label={t.nav[item.labelKey as keyof typeof t.nav]}
             href={item.href}
             icon={item.icon}
             active={activeMap[item.href] ?? false}
@@ -103,12 +107,14 @@ export function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sidebar-foreground text-sm font-medium truncate">{user?.name}</div>
-            <div className="text-sidebar-foreground/50 text-xs capitalize">{user?.role}</div>
+            <div className="text-sidebar-foreground/50 text-xs capitalize">
+              {user?.role ? t.roles[user.role] : ""}
+            </div>
           </div>
           <button
-            onClick={logout}
+            onClick={() => logout()}
             className="p-1.5 rounded-md text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
-            title="Sign out"
+            title={t.common.signOut}
           >
             <LogOut size={15} />
           </button>

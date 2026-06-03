@@ -14,7 +14,7 @@ import type { Book } from "@/data/mockData";
 
 interface BookCardProps {
   book: Book;
-  variant?: "grid" | "horizontal" | "featured";
+  variant?: "grid" | "horizontal" | "featured" | "carousel";
   showDiscount?: boolean;
 }
 
@@ -138,18 +138,32 @@ export function BookCard({
     );
   }
 
+  const isCarousel = variant === "carousel";
+
   return (
-    <Animated.View style={[styles.gridCardWrapper, { transform: [{ scale }] }]}>
+    <Animated.View
+      style={[
+        isCarousel ? styles.carouselCardWrapper : styles.gridCardWrapper,
+        { transform: [{ scale }] },
+      ]}
+    >
       <Pressable
         onPress={() => router.push(`/book/${book.id}`)}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         style={[
           styles.gridCard,
+          isCarousel && styles.carouselCard,
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
-        <View style={[styles.gridCover, { backgroundColor: book.coverGradient[0] }]}>
+        <View
+          style={[
+            styles.gridCover,
+            isCarousel && styles.carouselCover,
+            { backgroundColor: book.coverGradient[0] },
+          ]}
+        >
           <View style={[styles.coverShine, { backgroundColor: book.coverAccent + "20" }]} />
           <Ionicons name="book" size={32} color={book.coverAccent} />
           {discount > 0 && showDiscount && (
@@ -158,8 +172,15 @@ export function BookCard({
             </View>
           )}
         </View>
-        <View style={styles.gridInfo}>
-          <Text style={[styles.gridTitle, { color: colors.foreground }]} numberOfLines={2}>
+        <View style={[styles.gridInfo, isCarousel && styles.carouselInfo]}>
+          <Text
+            style={[
+              styles.gridTitle,
+              isCarousel && styles.carouselTitle,
+              { color: colors.foreground },
+            ]}
+            numberOfLines={2}
+          >
             {book.title}
           </Text>
           <Text style={[styles.gridPublisher, { color: colors.mutedForeground }]} numberOfLines={1}>
@@ -168,7 +189,15 @@ export function BookCard({
           <View style={styles.gridMeta}>
             <Text style={[styles.gridSubject, { color: colors.primary }]}>{book.subject}</Text>
           </View>
-          <Text style={[styles.gridPrice, { color: colors.accent }]}>EGP {book.price}</Text>
+          <Text
+            style={[
+              styles.gridPrice,
+              isCarousel && styles.carouselPrice,
+              { color: colors.accent },
+            ]}
+          >
+            EGP {book.price}
+          </Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -215,7 +244,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 10,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   newBadge: {
     position: "absolute",
@@ -229,7 +257,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 9,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   featuredInfo: {
     flex: 1,
@@ -239,12 +266,10 @@ const styles = StyleSheet.create({
   bookTitle: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     lineHeight: 20,
   },
   publisherText: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   metaRow: {
     flexDirection: "row",
@@ -258,7 +283,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   priceRow: {
@@ -270,11 +294,9 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   originalPrice: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     textDecorationLine: "line-through",
   },
   ratingRow: {
@@ -284,7 +306,6 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
   },
   horizontalCard: {
     flexDirection: "row",
@@ -315,6 +336,10 @@ const styles = StyleSheet.create({
     flex: 1,
     maxWidth: "50%",
   },
+  carouselCardWrapper: {
+    width: 188,
+    flexShrink: 0,
+  },
   gridCard: {
     margin: 5,
     borderRadius: 14,
@@ -326,38 +351,51 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 6,
   },
+  carouselCard: {
+    margin: 0,
+  },
   gridCover: {
     height: 130,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
   },
+  carouselCover: {
+    height: 144,
+  },
   gridInfo: {
     padding: 10,
     gap: 2,
   },
+  carouselInfo: {
+    padding: 12,
+    gap: 3,
+  },
   gridTitle: {
     fontSize: 13,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     lineHeight: 18,
+  },
+  carouselTitle: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   gridPublisher: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
   },
   gridMeta: {
     marginTop: 2,
   },
   gridSubject: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   gridPrice: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginTop: 4,
+  },
+  carouselPrice: {
+    fontSize: 16,
   },
 });

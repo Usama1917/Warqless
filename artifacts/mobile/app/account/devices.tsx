@@ -1,9 +1,8 @@
 /**
  * Device Management Screen
  *
- * MVP / DEMO: Device lock is simulated using AsyncStorage UUID.
- * Production must use backend device registration with signed tokens,
- * server-side license verification, and admin-approved device resets.
+ * MVP / DEMO: this screen displays the locally generated device ID, but
+ * reset requests are now submitted to the backend security API for admin review.
  */
 
 import { Ionicons } from "@expo/vector-icons";
@@ -25,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { createDeviceResetRequest, DeviceResetRequestError } from "@/services/catalogService";
 import { getCurrentDeviceId } from "@/services/deviceService";
 import { useColors } from "@/hooks/useColors";
 
@@ -168,6 +168,8 @@ export default function DevicesScreen() {
   const [showModal, setShowModal] = useState(false);
   const [resetRequest, setResetRequest] = useState<ResetRequest | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [requestError, setRequestError] = useState("");
+  const [submittingRequest, setSubmittingRequest] = useState(false);
   const successAnim = useRef(new Animated.Value(0)).current;
 
   const isDark = false;
@@ -177,27 +179,48 @@ export default function DevicesScreen() {
     getCurrentDeviceId().then(setDeviceId);
   }, []);
 
-  const handleSubmitRequest = (reason: string) => {
+  const handleSubmitRequest = async (reason: string) => {
     if (!reason || !user) return;
-    const req: ResetRequest = {
-      id: "req-" + Date.now(),
-      userId: user.id,
-      userEmail: user.email,
-      deviceId: deviceId ?? "unknown",
-      reason,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    };
-    setResetRequest(req);
-    setShowModal(false);
-    setShowSuccess(true);
-    Animated.spring(successAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 60,
-      friction: 8,
-    }).start();
-    setTimeout(() => setShowSuccess(false), 5000);
+    setSubmittingRequest(true);
+    setRequestError("");
+    try {
+      const created = await createDeviceResetRequest({
+        studentId: user.id,
+        deviceId: deviceId ?? "unknown",
+        reason,
+      }) as { id?: string; status?: "pending" | "approved" | "rejected"; createdAt?: string };
+
+      const req: ResetRequest = {
+        id: created.id ?? "req-" + Date.now(),
+        userId: user.id,
+        userEmail: user.email,
+        deviceId: deviceId ?? "unknown",
+        reason,
+        status: created.status ?? "pending",
+        createdAt: created.createdAt ?? new Date().toISOString(),
+      };
+      setResetRequest(req.status === "pending" ? req : null);
+      setShowModal(false);
+      setShowSuccess(true);
+      Animated.spring(successAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 60,
+        friction: 8,
+      }).start();
+      setTimeout(() => setShowSuccess(false), 5000);
+    } catch (error) {
+      if (error instanceof DeviceResetRequestError) {
+        if (error.reason === "pending_request") setRequestError(t.device.resetPendingError);
+        else if (error.reason === "cooldown") setRequestError(t.device.resetCooldownError);
+        else if (error.reason === "monthly_limit") setRequestError(t.device.resetMonthlyLimitError);
+        else setRequestError(error.message || t.device.requestError);
+      } else {
+        setRequestError(t.device.requestError);
+      }
+    } finally {
+      setSubmittingRequest(false);
+    }
   };
 
   const today = new Date().toLocaleDateString(isRTL ? "ar-EG" : "en-US", {
@@ -222,13 +245,9 @@ export default function DevicesScreen() {
       >
         <Pressable
           onPress={() => router.back()}
-          style={[styles.backBtn, isRTL && styles.backBtnRTL]}
+          style={styles.backBtn}
         >
-          <Ionicons
-            name={isRTL ? "arrow-forward" : "arrow-back"}
-            size={22}
-            color="#fff"
-          />
+          <Ionicons name="arrow-back" size={22} color="#fff" />
         </Pressable>
         <Text style={[styles.headerTitle, isRTL && styles.rtlText]}>
           {t.device.screenTitle}
@@ -341,17 +360,27 @@ export default function DevicesScreen() {
         {!resetRequest && (
           <Pressable
             onPress={() => setShowModal(true)}
+            disabled={submittingRequest}
             style={({ pressed }) => [
               styles.requestBtn,
               {
                 backgroundColor: colors.accent,
-                opacity: pressed ? 0.85 : 1,
+                opacity: pressed || submittingRequest ? 0.85 : 1,
               },
             ]}
           >
             <Ionicons name="swap-horizontal-outline" size={20} color="#fff" />
             <Text style={styles.requestBtnText}>{t.device.requestChange}</Text>
           </Pressable>
+        )}
+
+        {requestError !== "" && (
+          <View style={[styles.errorCard, { backgroundColor: colors.destructive + "12", borderColor: colors.destructive + "35" }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.destructive} />
+            <Text style={[styles.errorText, { color: colors.destructive }, isRTL && styles.rtlText]}>
+              {requestError}
+            </Text>
+          </View>
         )}
 
         {/* Demo note */}
@@ -437,19 +466,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
-  backBtnRTL: {
-    alignSelf: "flex-end",
-  },
   headerTitle: {
     fontSize: 26,
-    fontFamily: "Inter_700Bold",
     fontWeight: "700",
     color: "#fff",
     marginBottom: 4,
   },
   headerSub: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.68)",
   },
 
@@ -464,7 +488,6 @@ const styles = StyleSheet.create({
   noticeText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
     lineHeight: 20,
   },
 
@@ -487,7 +510,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     marginBottom: 4,
   },
@@ -508,7 +530,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#16A34A",
   },
@@ -526,11 +547,9 @@ const styles = StyleSheet.create({
   deviceRowLabel: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
   },
   deviceRowValue: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
     maxWidth: "50%",
     textAlign: "right",
@@ -538,7 +557,6 @@ const styles = StyleSheet.create({
 
   sectionLabel: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     letterSpacing: 0.7,
     textTransform: "uppercase",
@@ -559,7 +577,6 @@ const styles = StyleSheet.create({
   ruleText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
     lineHeight: 20,
   },
 
@@ -573,13 +590,11 @@ const styles = StyleSheet.create({
   },
   pendingTitle: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     marginBottom: 2,
   },
   pendingDesc: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
 
   requestBtn: {
@@ -593,8 +608,21 @@ const styles = StyleSheet.create({
   requestBtnText: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
     fontWeight: "700",
+  },
+
+  errorCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
   },
 
   demoNote: {
@@ -609,7 +637,6 @@ const styles = StyleSheet.create({
   demoNoteText: {
     flex: 1,
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
     lineHeight: 17,
   },
 
@@ -628,7 +655,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#fff",
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
 
@@ -664,14 +690,12 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontFamily: "Inter_700Bold",
     fontWeight: "700",
     marginBottom: 8,
     textAlign: "center",
   },
   modalDesc: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 20,
@@ -681,7 +705,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     minHeight: 100,
     marginBottom: 20,
   },
@@ -697,7 +720,6 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   sendBtn: {
@@ -709,7 +731,6 @@ const styles = StyleSheet.create({
   sendBtnText: {
     color: "#fff",
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
 

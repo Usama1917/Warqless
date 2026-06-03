@@ -1,10 +1,3 @@
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  useFonts,
-} from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -15,6 +8,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
+import { CatalogProvider } from "@/context/CatalogContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -43,33 +37,24 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
-
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
-  if (!fontsLoaded && !fontError) return null;
+    SplashScreen.hideAsync();
+  }, []);
 
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>
-            <AppProvider>
-              <GestureHandlerRootView>
-                <KeyboardProvider>
-                  <RootLayoutNav />
-                </KeyboardProvider>
-              </GestureHandlerRootView>
-            </AppProvider>
+            <CatalogProvider>
+              <AppProvider>
+                <GestureHandlerRootView>
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                </GestureHandlerRootView>
+              </AppProvider>
+            </CatalogProvider>
           </LanguageProvider>
         </QueryClientProvider>
       </ErrorBoundary>

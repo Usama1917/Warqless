@@ -4,6 +4,11 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: string;
+  twoFactorEnabled?: boolean;
+  twoFactorEnabledAt?: string;
   role: AdminRole;
   publisherId?: string;
 }
@@ -26,6 +31,7 @@ export interface AdminBook {
   publisherId: string;
   publisher: string;
   subject: string;
+  classification: string;
   grade: string;
   type: string;
   price: number;
@@ -42,6 +48,9 @@ export interface Student {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  phoneVerified?: boolean;
+  phoneVerifiedAt?: string;
   grade: string;
   booksOwned: number;
   booksBorrowed: number;
@@ -49,6 +58,68 @@ export interface Student {
   devices: number;
   joinedAt: string;
   status: "active" | "suspended";
+  currentDevice?: StudentDevice;
+  deviceHistory?: StudentDevice[];
+  deviceChangeRequests?: DeviceChangeRequest[];
+  securityEvents?: StudentSecurityEvent[];
+  coupons?: StudentCoupons;
+  auth?: StudentAuthSummary;
+}
+
+export interface StudentDevice {
+  deviceId: string;
+  maskedDeviceId: string;
+  platform: string;
+  osVersion?: string;
+  appVersion?: string;
+  deviceName?: string;
+  registeredAt: string;
+  lastVerifiedAt: string;
+  status: "active" | "blocked" | "pending_reset";
+}
+
+export interface DeviceChangeRequest {
+  id: string;
+  deviceId: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface StudentSecurityEvent {
+  id: string;
+  type: string;
+  severity: "low" | "medium" | "high" | "critical";
+  deviceId: string;
+  message: string;
+  createdAt: string;
+  metadata?: Record<string, string>;
+}
+
+export interface StudentCoupon {
+  code: string;
+  status: "used" | "unused";
+  bookId?: string;
+  bookTitle?: string;
+  discountPct?: number;
+  discountResponsibility?: "platform" | "publisher" | "shared";
+  usedAt?: string;
+}
+
+export interface StudentCoupons {
+  used: StudentCoupon[];
+  unused: StudentCoupon[];
+}
+
+export interface StudentAuthSummary {
+  authProvider: "email_password_demo";
+  passwordSet: boolean;
+  passwordHashStored: boolean;
+  passwordLastChangedAt?: string;
+  lastLoginAt?: string;
+  failedLoginAttempts: number;
+  note: string;
 }
 
 export interface Order {
@@ -62,6 +133,8 @@ export interface Order {
   amount: number;
   status: "completed" | "refunded" | "pending";
   createdAt: string;
+  couponCode?: string;
+  discountAmount?: number;
 }
 
 export interface LendingRecord {
@@ -143,6 +216,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p1",
     publisher: "Dar Al-Ma'aref",
     subject: "Mathematics",
+    classification: "term1",
     grade: "Grade 10",
     type: "Textbook",
     price: 89,
@@ -160,6 +234,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p2",
     publisher: "Al-Shorouk Publishers",
     subject: "Physics",
+    classification: "term1",
     grade: "Grade 11",
     type: "Textbook",
     price: 79,
@@ -176,6 +251,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p1",
     publisher: "Dar Al-Ma'aref",
     subject: "Arabic",
+    classification: "term1",
     grade: "Grade 9",
     type: "Textbook",
     price: 65,
@@ -192,6 +268,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p3",
     publisher: "Merit Publishing",
     subject: "Chemistry",
+    classification: "workbook",
     grade: "Grade 12",
     type: "Workbook",
     price: 55,
@@ -208,6 +285,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p4",
     publisher: "Arab Science Publishers",
     subject: "Biology",
+    classification: "term1",
     grade: "Grade 10",
     type: "Textbook",
     price: 95,
@@ -225,6 +303,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p2",
     publisher: "Al-Shorouk Publishers",
     subject: "English",
+    classification: "full_year",
     grade: "Grade 8",
     type: "Practice",
     price: 45,
@@ -241,6 +320,7 @@ export const BOOKS: AdminBook[] = [
     publisherId: "p5",
     publisher: "Nile Educational Press",
     subject: "History",
+    classification: "final_revision",
     grade: "Grade 11",
     type: "Textbook",
     price: 72,

@@ -43,12 +43,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     textAlign: "center",
   },
   description: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 20,
   },

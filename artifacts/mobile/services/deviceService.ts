@@ -5,17 +5,17 @@
  * AsyncStorage. On first run, a random UUID is generated and stored as the
  * device's permanent identifier.
  *
+ * Current backend integration stores/verifies this generated ID server-side.
+ *
  * LIMITATIONS — must be replaced in production with:
- *   - Backend device registration (server-side storage)
  *   - Signed device tokens with short TTL
  *   - Platform-level identifiers (Android ANDROID_ID, iOS identifierForVendor)
- *   - Admin approval flow for device resets
- *   - Server-side verification on every book open
  */
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DEVICE_ID_KEY = "warqless_device_id";
+const DEVICE_REGISTERED_AT_KEY = "warqless_device_registered_at";
 const PRIMARY_DEVICE_PREFIX = "warqless_primary_device_";
 
 function generateUUID(): string {
@@ -42,18 +42,25 @@ export async function getCurrentDeviceId(): Promise<string> {
   }
 }
 
-/**
- * Register the current device as the primary device for a user.
- * Call on first successful login.
- */
+export async function getDeviceRegisteredAt(): Promise<string> {
+  try {
+    const stored = await AsyncStorage.getItem(DEVICE_REGISTERED_AT_KEY);
+    if (stored) return stored;
+    const createdAt = new Date().toISOString();
+    await AsyncStorage.setItem(DEVICE_REGISTERED_AT_KEY, createdAt);
+    return createdAt;
+  } catch {
+    return new Date().toISOString();
+  }
+}
+
+/** @deprecated Device binding is now handled by the backend verification API. */
 export async function registerPrimaryDevice(userId: string): Promise<void> {
   const deviceId = await getCurrentDeviceId();
   await AsyncStorage.setItem(`${PRIMARY_DEVICE_PREFIX}${userId}`, deviceId);
 }
 
-/**
- * Get the registered primary device ID for a user, or null if none.
- */
+/** @deprecated Device binding is now handled by the backend verification API. */
 export async function getPrimaryDeviceId(userId: string): Promise<string | null> {
   return AsyncStorage.getItem(`${PRIMARY_DEVICE_PREFIX}${userId}`);
 }
@@ -62,10 +69,7 @@ export type DeviceCheckResult =
   | { allowed: true }
   | { allowed: false; reason: "different_device" | "no_device" };
 
-/**
- * Verify the current device is the registered primary device for a user.
- * Returns { allowed: true } if OK, or { allowed: false, reason } if blocked.
- */
+/** @deprecated Use verifyStudentDevice from catalogService instead. */
 export async function verifyPrimaryDevice(userId: string): Promise<DeviceCheckResult> {
   const currentId = await getCurrentDeviceId();
   const primaryId = await getPrimaryDeviceId(userId);

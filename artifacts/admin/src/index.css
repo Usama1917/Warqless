@@ -125,7 +125,8 @@
   --chart-4: 340 65% 55%;
   --chart-5: 280 50% 55%;
 
-  --app-font-sans: 'Inter', sans-serif;
+  --app-font-apple-arabic: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Arabic", "Geeza Pro", "Helvetica Neue", Arial, sans-serif;
+  --app-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
   --radius: .625rem;
@@ -148,6 +149,27 @@
   --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+html[lang="ar"] {
+  --app-font-sans: var(--app-font-apple-arabic);
+  font-family: var(--app-font-apple-arabic);
+}
+
+html[lang="ar"] body,
+html[lang="ar"] button,
+html[lang="ar"] input,
+html[lang="ar"] textarea,
+html[lang="ar"] select {
+  font-family: var(--app-font-apple-arabic);
+}
+
+html[lang="ar"] .admin-login-page,
+html[lang="ar"] .admin-login-page button,
+html[lang="ar"] .admin-login-page input,
+html[lang="ar"] .admin-login-page textarea,
+html[lang="ar"] .admin-login-page select {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .dark {

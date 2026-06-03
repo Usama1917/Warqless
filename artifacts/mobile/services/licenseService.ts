@@ -53,11 +53,11 @@ export async function verifyOnlineAccess(): Promise<OnlineCheckResult> {
 
 export type LicenseCheckResult =
   | { valid: true }
-  | { valid: false; reason: "not_purchased" | "lent_out" | "expired" | "device_mismatch" };
+  | { valid: false; reason: "not_purchased" | "expired" | "device_mismatch" };
 
 /**
  * Verify a student holds a valid license for a book.
- * MVP: checks local purchasedBooks / borrowedBooks state.
+ * MVP: checks local purchasedBooks state.
  *
  * Production: this should call the API with a signed session token
  * and return a short-lived, server-signed page access token.
@@ -65,19 +65,11 @@ export type LicenseCheckResult =
 export function verifyBookLicense(
   bookId: string,
   purchasedBookIds: string[],
-  borrowedBookIds: string[],
-  lentOutBookIds: string[]
 ): LicenseCheckResult {
   const isPurchased = purchasedBookIds.includes(bookId);
-  const isBorrowed = borrowedBookIds.includes(bookId);
-  const isLentOut = lentOutBookIds.includes(bookId);
 
-  if (!isPurchased && !isBorrowed) {
+  if (!isPurchased) {
     return { valid: false, reason: "not_purchased" };
-  }
-
-  if (isPurchased && isLentOut) {
-    return { valid: false, reason: "lent_out" };
   }
 
   return { valid: true };

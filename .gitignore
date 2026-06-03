@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local development data; keep this on your machine, not in Git
+artifacts/api-server/data/*.json

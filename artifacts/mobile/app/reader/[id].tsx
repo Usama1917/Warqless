@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ScreenCapture from "expo-screen-capture";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Platform,
@@ -15,11 +16,18 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useApp } from "@/context/AppContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { BOOKS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
-import { verifyBookLicense } from "@/services/licenseService";
+import {
+  DEFAULT_PLATFORM_SETTINGS,
+  fetchPlatformSettings,
+  verifyReaderAccess,
+  type PlatformSettings,
+  type ReaderAccessResult,
+} from "@/services/catalogService";
 import { getCurrentDeviceId } from "@/services/deviceService";
+import { verifyOnlineAccess } from "@/services/licenseService";
 import { logSecurityEvent } from "@/services/securityEventService";
 
 type ReadingMode = "light" | "dark" | "sepia";
@@ -81,18 +89,23 @@ const SAMPLE_PAGES: string[][] = [
   ],
 ];
 
+function maskReaderDeviceId(id: string) {
+  if (id.length <= 8) return "********";
+  return `${id.slice(0, 4)}********${id.slice(-4)}`;
+}
+
 export default function ReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, purchasedBooks, borrowedBooks, updateReadingProgress, toggleBookmark } = useApp();
+  const { user, purchasedBooks, updateReadingProgress, toggleBookmark } = useApp();
+  const { books } = useCatalog();
   const { t, isRTL } = useLanguage();
 
   const book =
     purchasedBooks.find((b) => b.id === id) ??
-    borrowedBooks.find((b) => b.id === id) ??
-    BOOKS.find((b) => b.id === id);
+    books.find((b) => b.id === id);
 
   const purchasedBook = purchasedBooks.find((b) => b.id === id);
 
@@ -106,62 +119,166 @@ export default function ReaderScreen() {
   const [notes, setNotes] = useState<{ page: number; text: string }[]>([]);
   const [highlights, setHighlights] = useState<Set<number>>(new Set());
   const [showToc, setShowToc] = useState(false);
+  const [accessResult, setAccessResult] = useState<ReaderAccessResult | null>(null);
+  const [accessLoading, setAccessLoading] = useState(true);
+  const [accessError, setAccessError] = useState("");
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(DEFAULT_PLATFORM_SETTINGS);
+  const [readerDeviceId, setReaderDeviceId] = useState("");
 
   const toolbarOpacity = useRef(new Animated.Value(1)).current;
-  const securityEventLogged = useRef(false);
+  const accessCheckKey = useRef("");
   const totalPages = book?.pages ?? 100;
   const pageIndex = Math.min(currentPage - 1, SAMPLE_PAGES.length - 1);
   const pageContent = SAMPLE_PAGES[pageIndex] ?? SAMPLE_PAGES[0];
   const isBookmarked = purchasedBook?.bookmarkedPages.includes(currentPage) ?? false;
 
   const modeStyle = READING_MODE_CONFIGS.find((m) => m.mode === readingMode) ?? READING_MODE_CONFIGS[0];
+  const readerSettings = platformSettings.readerProtection;
+  const watermarkText = useMemo(() => {
+    const parts = ["Warqless"];
+    if (readerSettings.watermarkStudentEmail && user?.email) parts.push(user.email);
+    if (readerSettings.watermarkDeviceId && readerDeviceId) parts.push(maskReaderDeviceId(readerDeviceId));
+    if (readerSettings.watermarkTimestamp) parts.push(new Date().toLocaleString(isRTL ? "ar-EG" : "en-US"));
+    if (parts.length === 1) parts.push(t.protection.demoLicense);
+    return parts.join(" · ");
+  }, [
+    isRTL,
+    readerDeviceId,
+    readerSettings.watermarkDeviceId,
+    readerSettings.watermarkStudentEmail,
+    readerSettings.watermarkTimestamp,
+    t.protection.demoLicense,
+    user?.email,
+  ]);
 
-  // Log security event once on mount
   useEffect(() => {
-    if (securityEventLogged.current || !user) return;
-    securityEventLogged.current = true;
-    getCurrentDeviceId().then((deviceId) => {
-      if (licenseCheck.valid) {
-        logSecurityEvent({
-          type: "reader_opened",
-          severity: "low",
-          userId: user.id,
-          userName: user.name,
-          userEmail: user.email,
-          bookId: id ?? undefined,
-          bookTitle: book?.title,
+    if (!id || !book || !user) {
+      setAccessLoading(false);
+      setAccessResult({ allowed: false, reason: "not_purchased" });
+      return;
+    }
+
+    const key = `${user.id}:${id}:${purchasedBook?.licenseId ?? "not-purchased"}`;
+    if (accessCheckKey.current === key) return;
+    accessCheckKey.current = key;
+
+    let isActive = true;
+    setAccessLoading(true);
+    setAccessError("");
+    setAccessResult(null);
+
+    const checkReaderAccess = async () => {
+      let effectiveReaderSettings = platformSettings.readerProtection;
+      try {
+        const settings = await fetchPlatformSettings();
+        if (!isActive) return;
+        setPlatformSettings(settings);
+        const readerProtection = settings.readerProtection;
+        effectiveReaderSettings = readerProtection;
+        const deviceId = await getCurrentDeviceId();
+        if (!isActive) return;
+        setReaderDeviceId(deviceId);
+
+        if (readerProtection.requireInternetToOpenBooks) {
+          const online = await verifyOnlineAccess();
+          if (!isActive) return;
+          if (!online.online) {
+            setAccessError(t.protection.offlineDesc);
+            setAccessResult({ allowed: false, reason: "license_failed" });
+            return;
+          }
+        }
+
+        if (!purchasedBook && !readerProtection.blockUnpurchasedReaderAccess) {
+          setAccessResult({ allowed: true });
+          return;
+        }
+
+        const result = await verifyReaderAccess({
+          studentId: user.id,
+          bookId: id,
+          bookTitle: book.title,
           deviceId,
-          message: `Reader opened for "${book?.title ?? id}". License and device verified.`,
-          metadata: { page: String(currentPage) },
+          clientClaimsPurchased: Boolean(purchasedBook),
+          page: currentPage,
         });
-      } else {
-        const reason = licenseCheck.reason;
-        logSecurityEvent({
-          type: "reader_access_denied",
-          severity: "high",
-          userId: user.id,
-          userName: user.name,
-          userEmail: user.email,
-          bookId: id ?? undefined,
-          bookTitle: book?.title,
-          deviceId,
-          message:
-            reason === "lent_out"
-              ? `Reader access denied for "${book?.title ?? id}". Book is currently lent out.`
-              : `Reader access denied for "${book?.title ?? id}". Book not purchased or borrowed.`,
-          metadata: { reason: reason ?? "unknown" },
-        });
+
+        if (!isActive) return;
+        setAccessResult(result);
+      } catch {
+        if (!isActive) return;
+        if (!effectiveReaderSettings.requireInternetToOpenBooks && (purchasedBook || !effectiveReaderSettings.blockUnpurchasedReaderAccess)) {
+          setAccessResult({ allowed: true });
+          return;
+        }
+        setAccessError(effectiveReaderSettings.requireInternetToOpenBooks ? t.protection.offlineDesc : t.protection.licenseFailedDesc);
+        setAccessResult({ allowed: false, reason: "license_failed" });
+      } finally {
+        if (isActive) setAccessLoading(false);
       }
+    };
+
+    void checkReaderAccess();
+
+    return () => {
+      isActive = false;
+    };
+  }, [
+    book,
+    currentPage,
+    id,
+    purchasedBook,
+    readerSettings.blockUnpurchasedReaderAccess,
+    readerSettings.requireInternetToOpenBooks,
+    t.protection.licenseFailedDesc,
+    t.protection.offlineDesc,
+    user,
+  ]);
+
+  useEffect(() => {
+    if (Platform.OS === "web" || !readerSettings.screenshotProtectionEnabled) return;
+    void ScreenCapture.preventScreenCaptureAsync("warqless-reader").catch(() => {
+      // Screenshot prevention is best-effort and platform-dependent in the MVP.
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+    return () => {
+      void ScreenCapture.allowScreenCaptureAsync("warqless-reader").catch(() => {});
+    };
+  }, [readerSettings.screenshotProtectionEnabled]);
+
+  useEffect(() => {
+    if (Platform.OS === "web" || !readerSettings.logScreenshotAttempts || !user || !book) return;
+
+    const subscription = ScreenCapture.addScreenshotListener(() => {
+      void getCurrentDeviceId()
+        .then((deviceId) =>
+          logSecurityEvent({
+            type: "screenshot_attempt",
+            severity: "critical",
+            userId: user.id,
+            userName: user.name,
+            userEmail: user.email,
+            bookId: book.id,
+            bookTitle: book.title,
+            deviceId,
+            message: `Screenshot attempt detected while reading "${book.title}".`,
+            metadata: { page: String(currentPage) },
+          }),
+        )
+        .catch(() => {});
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [book, currentPage, readerSettings.logScreenshotAttempts, user]);
 
   useEffect(() => {
     const progress = Math.round((currentPage / totalPages) * 100);
-    if (purchasedBook) {
+    if (purchasedBook && accessResult?.allowed) {
       updateReadingProgress(purchasedBook.id, currentPage, Math.min(progress, 100));
     }
-  }, [currentPage]);
+  }, [accessResult, currentPage, purchasedBook, totalPages, updateReadingProgress]);
 
   const toggleToolbar = useCallback(() => {
     const toValue = showToolbar ? 0 : 1;
@@ -218,14 +335,6 @@ export default function ReaderScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  // ── Access Guard ────────────────────────────────────────────────────────────
-  // Verify the user owns or has borrowed this book before allowing reader access.
-  // In production this must be replaced with server-side license verification.
-  const purchasedIds = purchasedBooks.map((b) => b.id);
-  const borrowedIds = borrowedBooks.filter((b) => !b.isLentOut).map((b) => b.id);
-  const lentOutIds = borrowedBooks.filter((b) => b.isLentOut).map((b) => b.id);
-  const licenseCheck = verifyBookLicense(id ?? "", purchasedIds, borrowedIds, lentOutIds);
-
   if (!book) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
@@ -237,8 +346,23 @@ export default function ReaderScreen() {
     );
   }
 
-  if (licenseCheck.valid === false) {
-    const isLentOut = licenseCheck.reason === "lent_out";
+  if (accessLoading) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.foreground }}>{t.common.loading}</Text>
+      </View>
+    );
+  }
+
+  if (accessResult?.allowed === false) {
+    const accessMessage =
+      accessError ||
+      (accessResult.reason === "device_mismatch"
+        ? t.protection.deviceBlockedDesc
+        : accessResult.reason === "license_failed"
+          ? t.protection.licenseFailedDesc
+          : t.protection.accessDeniedDesc);
+
     return (
       <View style={[styles.center, { backgroundColor: colors.background, paddingHorizontal: 32 }]}>
         <View
@@ -246,41 +370,39 @@ export default function ReaderScreen() {
             width: 72,
             height: 72,
             borderRadius: 36,
-            backgroundColor: isLentOut ? colors.accent + "20" : "#EF444420",
+            backgroundColor: "#EF444420",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 20,
           }}
         >
           <Ionicons
-            name={isLentOut ? "swap-horizontal" : "lock-closed"}
+            name="lock-closed"
             size={32}
-            color={isLentOut ? colors.accent : "#EF4444"}
+            color="#EF4444"
           />
         </View>
         <Text
           style={{
             color: colors.foreground,
             fontSize: 18,
-            fontFamily: "Inter_700Bold",
             fontWeight: "700",
             textAlign: "center",
             marginBottom: 10,
           }}
         >
-          {isLentOut ? t.protection.lentOutTitle : t.protection.accessDeniedTitle}
+          {t.protection.accessDeniedTitle}
         </Text>
         <Text
           style={{
             color: colors.mutedForeground,
             fontSize: 14,
-            fontFamily: "Inter_400Regular",
             textAlign: "center",
             lineHeight: 22,
             marginBottom: 28,
           }}
         >
-          {isLentOut ? t.protection.lentOutDesc : t.protection.accessDeniedDesc}
+          {accessMessage}
         </Text>
         <Pressable
           onPress={() => router.replace("/(tabs)/library")}
@@ -294,12 +416,12 @@ export default function ReaderScreen() {
             alignItems: "center",
           }}
         >
-          <Text style={{ color: "#fff", fontFamily: "Inter_600SemiBold", fontWeight: "600", fontSize: 15 }}>
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>
             {t.protection.backToLibrary}
           </Text>
         </Pressable>
         <Pressable onPress={() => router.replace("/(tabs)/browse")}>
-          <Text style={{ color: colors.primary, fontFamily: "Inter_500Medium", fontSize: 14, marginTop: 4 }}>
+          <Text style={{ color: colors.primary, fontWeight: "500", fontSize: 14, marginTop: 4 }}>
             {t.protection.browseStore}
           </Text>
         </Pressable>
@@ -465,17 +587,15 @@ export default function ReaderScreen() {
         />
       </View>
 
-      {/* Watermark — user-stamped, tiled, semi-transparent
-           In production: generate server-side with signed license ID */}
-      <View style={styles.watermarkOverlay} pointerEvents="none">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <View key={i} style={[styles.watermarkTile, { top: `${14 + i * 16}%` as any }]}>
-            <Text style={styles.watermarkText}>
-              Warqless · {user?.email ?? "demo@warqless.com"} · {t.protection.demoLicense}
-            </Text>
-          </View>
-        ))}
-      </View>
+      {readerSettings.visibleWatermark && (
+        <View style={styles.watermarkOverlay} pointerEvents="none">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <View key={i} style={[styles.watermarkTile, { top: `${14 + i * 16}%` as any }]}>
+              <Text style={styles.watermarkText}>{watermarkText}</Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Page content */}
       <Pressable onPress={toggleToolbar} style={{ flex: 1 }}>
@@ -733,11 +853,9 @@ const styles = StyleSheet.create({
   bookTitleSmall: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
   },
   pageCounter: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
   },
   topBarActions: {
     flexDirection: "row",
@@ -764,7 +882,6 @@ const styles = StyleSheet.create({
   },
   watermarkText: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
     transform: [{ rotate: "-25deg" }],
     color: "#1A4A7C",
     letterSpacing: 0.5,
@@ -775,21 +892,17 @@ const styles = StyleSheet.create({
   },
   pageHeading: {
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     lineHeight: 32,
     marginBottom: 4,
   },
   pageText: {
-    fontFamily: "Inter_400Regular",
     lineHeight: 26,
   },
   pageBullet: {
-    fontFamily: "Inter_400Regular",
     lineHeight: 24,
     paddingLeft: 8,
   },
   pageFormula: {
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
     lineHeight: 22,
     letterSpacing: 0.5,
@@ -804,7 +917,6 @@ const styles = StyleSheet.create({
   noteText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
     lineHeight: 18,
   },
   modeMenu: {
@@ -817,7 +929,6 @@ const styles = StyleSheet.create({
   },
   modeMenuTitle: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -835,7 +946,6 @@ const styles = StyleSheet.create({
   },
   modeBtnText: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   fontSizeRow: {
@@ -856,12 +966,10 @@ const styles = StyleSheet.create({
   },
   fontBtnText: {
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   fontSizeValue: {
     fontSize: 16,
-    fontFamily: "Inter_700Bold",
     fontWeight: "700",
     minWidth: 28,
     textAlign: "center",
@@ -884,13 +992,11 @@ const styles = StyleSheet.create({
   },
   tocText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
     flex: 1,
   },
   tocPage: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   noteInputWrap: {
     borderTopWidth: 1,
@@ -902,7 +1008,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     minHeight: 80,
     textAlignVertical: "top",
   },
@@ -923,7 +1028,6 @@ const styles = StyleSheet.create({
   noteSaveBtnText: {
     color: "#fff",
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   bottomBar: {
@@ -963,7 +1067,6 @@ const styles = StyleSheet.create({
   },
   pageNum: {
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   rtlText: {

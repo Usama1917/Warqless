@@ -305,12 +305,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginBottom: 2,
   },
   headerSub: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
   },
   list: {
     padding: 16,
@@ -339,12 +337,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     lineHeight: 20,
   },
   publisher: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   ownerRow: {
     flexDirection: "row",
@@ -356,7 +352,6 @@ const styles = StyleSheet.create({
   },
   ownerText: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   statusBadge: {
     flexDirection: "row",
@@ -368,7 +363,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   actions: {
@@ -386,7 +380,6 @@ const styles = StyleSheet.create({
   readBtnText: {
     color: "#fff",
     fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   returnBtn: {
@@ -399,7 +392,6 @@ const styles = StyleSheet.create({
   },
   returnBtnText: {
     fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   lentSection: {
@@ -407,7 +399,6 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -432,15 +423,12 @@ const styles = StyleSheet.create({
   titleSmall: {
     fontSize: 13,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   lentTo: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
   },
   lentDate: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
   },
   lentBadge: {
     paddingHorizontal: 8,
@@ -449,7 +437,6 @@ const styles = StyleSheet.create({
   },
   lentBadgeText: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   divider: {
@@ -468,7 +455,6 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     lineHeight: 18,
   },
   signInBtn: {
@@ -482,7 +468,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   rtlText: {
     textAlign: "right",

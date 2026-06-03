@@ -16,14 +16,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BookCard } from "@/components/BookCard";
 import { CategoryChip } from "@/components/CategoryChip";
 import { EmptyState } from "@/components/EmptyState";
+import { useCatalog } from "@/context/CatalogContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { BOOK_TYPES, BOOKS, GRADES, SUBJECTS } from "@/data/mockData";
+import { BOOK_TYPES } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
 export default function BrowseScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ grade?: string; subject?: string }>();
+  const { books, grades, subjects } = useCatalog();
   const { t, isRTL } = useLanguage();
 
   const [query, setQuery] = useState("");
@@ -33,7 +35,7 @@ export default function BrowseScreen() {
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
-    return BOOKS.filter((b) => {
+    return books.filter((b) => {
       const q = query.toLowerCase();
       const matchQ =
         !q ||
@@ -45,7 +47,7 @@ export default function BrowseScreen() {
       const matchType = !selectedType || b.type === selectedType;
       return matchQ && matchGrade && matchSubject && matchType;
     });
-  }, [query, selectedGrade, selectedSubject, selectedType]);
+  }, [books, query, selectedGrade, selectedSubject, selectedType]);
 
   const clearAll = () => {
     setSelectedGrade("");
@@ -170,7 +172,7 @@ export default function BrowseScreen() {
                 onPress={() => setSelectedGrade("")}
                 small
               />
-              {GRADES.map((g) => (
+              {grades.map((g) => (
                 <CategoryChip
                   key={g}
                   label={g}
@@ -195,7 +197,7 @@ export default function BrowseScreen() {
                 onPress={() => setSelectedSubject("")}
                 small
               />
-              {SUBJECTS.slice(0, 6).map((s) => (
+              {subjects.slice(0, 6).map((s) => (
                 <CategoryChip
                   key={s}
                   label={s}
@@ -267,7 +269,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginBottom: 12,
   },
   searchBar: {
@@ -282,7 +283,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
   },
   filterRow: {
     flexDirection: "row",
@@ -303,7 +303,6 @@ const styles = StyleSheet.create({
   },
   filterToggleText: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   filterDot: {
@@ -314,11 +313,9 @@ const styles = StyleSheet.create({
   resultCount: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
   },
   clearText: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   filtersPanel: {
@@ -327,7 +324,6 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,

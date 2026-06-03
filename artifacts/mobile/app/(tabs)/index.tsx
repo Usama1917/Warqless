@@ -18,8 +18,9 @@ import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { BookCard } from "@/components/BookCard";
 import { SectionHeader } from "@/components/SectionHeader";
 import { useApp } from "@/context/AppContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { BOOKS, FEATURED_OFFERS, GRADES, SUBJECTS } from "@/data/mockData";
+import { FEATURED_OFFERS } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
 function OfferBanner({ offer }: { offer: (typeof FEATURED_OFFERS)[0] }) {
@@ -117,11 +118,12 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isAuthenticated, purchasedBooks } = useApp();
+  const { books, grades, subjects } = useCatalog();
   const { t, isRTL } = useLanguage();
 
-  const featuredBooks = BOOKS.filter((b) => b.isFeatured);
-  const popularBooks = BOOKS.filter((b) => b.isPopular);
-  const newBooks = BOOKS.filter((b) => b.isNew);
+  const featuredBooks = books.filter((b) => b.isFeatured);
+  const popularBooks = books.filter((b) => b.isPopular);
+  const newBooks = books.filter((b) => b.isNew);
   const continueReading = purchasedBooks.filter((b) => b.progress > 0 && b.progress < 100);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -231,7 +233,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader title={t.home.byGrade} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gradeRow}>
-          {GRADES.map((g) => (
+          {grades.map((g) => (
             <Pressable
               key={g}
               onPress={() => router.push({ pathname: "/(tabs)/browse", params: { grade: g } })}
@@ -258,12 +260,9 @@ export default function HomeScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(b) => b.id}
-            contentContainerStyle={{ paddingHorizontal: 11 }}
-            renderItem={({ item }) => (
-              <View style={{ width: 160 }}>
-                <BookCard book={item} variant="grid" />
-              </View>
-            )}
+            contentContainerStyle={styles.popularList}
+            ItemSeparatorComponent={() => <View style={styles.popularGap} />}
+            renderItem={({ item }) => <BookCard book={item} variant="carousel" />}
           />
         </View>
       </AnimatedEntrance>
@@ -273,7 +272,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader title={t.home.bySubject} />
           <View style={styles.subjectGrid}>
-            {SUBJECTS.slice(0, 6).map((s) => (
+            {subjects.slice(0, 6).map((s) => (
               <Pressable
                 key={s}
                 onPress={() => router.push({ pathname: "/(tabs)/browse", params: { subject: s } })}
@@ -323,13 +322,11 @@ const styles = StyleSheet.create({
   headerGreeting: {
     color: "rgba(255,255,255,0.8)",
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
   },
   headerBrand: {
     color: "#fff",
     fontSize: 24,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   headerActions: {
     flexDirection: "row",
@@ -352,7 +349,6 @@ const styles = StyleSheet.create({
     color: "#0D1B2A",
     fontSize: 13,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   searchBar: {
     flexDirection: "row",
@@ -365,7 +361,6 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     flex: 1,
   },
   section: {
@@ -373,6 +368,12 @@ const styles = StyleSheet.create({
   },
   featuredList: {
     paddingHorizontal: 16,
+  },
+  popularList: {
+    paddingHorizontal: 16,
+  },
+  popularGap: {
+    width: 14,
   },
   continueList: {
     paddingHorizontal: 16,
@@ -405,23 +406,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   offerTitle: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   offerDesc: {
     color: "rgba(255,255,255,0.8)",
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   offerExpiry: {
     color: "rgba(255,255,255,0.6)",
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
     marginTop: 4,
   },
   offerDecor: {
@@ -454,12 +451,10 @@ const styles = StyleSheet.create({
   continueTitle: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginBottom: 2,
   },
   continueSubtitle: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     marginBottom: 6,
   },
   progressRow: {
@@ -479,7 +474,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   continueBtn: {
@@ -501,7 +495,6 @@ const styles = StyleSheet.create({
   gradeChipText: {
     color: "#fff",
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   subjectGrid: {
@@ -521,7 +514,6 @@ const styles = StyleSheet.create({
   },
   subjectText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   newList: {},

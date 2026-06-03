@@ -15,6 +15,8 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { sendStudentSecurityEvent } from "@/services/catalogService";
+
 const EVENTS_KEY = "warqless_security_events";
 const MAX_EVENTS  = 100; // keep last 100 on-device
 
@@ -94,6 +96,25 @@ export async function logSecurityEvent(input: CreateEventInput): Promise<void> {
     events.unshift(event); // newest first
     if (events.length > MAX_EVENTS) events.splice(MAX_EVENTS);
     await AsyncStorage.setItem(EVENTS_KEY, JSON.stringify(events));
+
+    void sendStudentSecurityEvent({
+      studentId: event.userId,
+      event: {
+        id: event.id,
+        type: event.type,
+        severity: event.severity,
+        deviceId: event.deviceId,
+        message: event.message,
+        createdAt: event.createdAt,
+        metadata: {
+          ...(event.bookId ? { bookId: event.bookId } : {}),
+          ...(event.bookTitle ? { bookTitle: event.bookTitle } : {}),
+          ...(event.metadata ?? {}),
+        },
+      },
+    }).catch(() => {
+      // Server sync is best-effort in the local demo.
+    });
   } catch {
     // Never throw — event logging must be non-blocking
   }

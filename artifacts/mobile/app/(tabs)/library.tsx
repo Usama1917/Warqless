@@ -221,12 +221,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginBottom: 2,
   },
   headerSub: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
     marginBottom: 12,
   },
   filterRow: {
@@ -267,12 +265,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     lineHeight: 20,
   },
   publisher: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   metaRow: {
     flexDirection: "row",
@@ -285,7 +281,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   progressRow: {
@@ -305,7 +300,6 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   footer: {
@@ -315,7 +309,6 @@ const styles = StyleSheet.create({
   },
   pageInfo: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
   },
   completeBadge: {
     flexDirection: "row",
@@ -327,7 +320,6 @@ const styles = StyleSheet.create({
   },
   completeBadgeText: {
     fontSize: 10,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   readBtn: {
@@ -349,7 +341,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   rtlText: {
     textAlign: "right",

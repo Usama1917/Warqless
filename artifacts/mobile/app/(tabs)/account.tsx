@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,14 +25,24 @@ interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value?: string;
+  valueDirection?: "ltr" | "rtl";
   onPress?: () => void;
   danger?: boolean;
   rightElement?: React.ReactNode;
 }
 
-function MenuItem({ icon, label, value, onPress, danger = false, rightElement }: MenuItemProps) {
+function MenuItem({
+  icon,
+  label,
+  value,
+  valueDirection,
+  onPress,
+  danger = false,
+  rightElement,
+}: MenuItemProps) {
   const colors = useColors();
   const { isRTL } = useLanguage();
+  const forceValueLTR = valueDirection === "ltr";
   return (
     <Pressable
       onPress={onPress}
@@ -62,7 +74,15 @@ function MenuItem({ icon, label, value, onPress, danger = false, rightElement }:
           {label}
         </Text>
         {value && (
-          <Text style={[styles.menuValue, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+          <Text
+            style={[
+              styles.menuValue,
+              { color: colors.mutedForeground },
+              forceValueLTR
+                ? [styles.ltrValue, isRTL && styles.ltrValueInRTL]
+                : isRTL && styles.rtlText,
+            ]}
+          >
             {value}
           </Text>
         )}
@@ -129,8 +149,24 @@ export default function AccountScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, isAuthenticated, logout, purchasedBooks } = useApp();
+  const {
+    user,
+    isAuthenticated,
+    logout,
+    purchasedBooks,
+    requestPhoneVerification,
+    verifyPhoneCode,
+    changePhone,
+  } = useApp();
   const { t, isRTL } = useLanguage();
+  const [isPhoneEditorOpen, setIsPhoneEditorOpen] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState(user?.phone ?? "");
+  const [phoneCode, setPhoneCode] = useState("");
+  const [phoneDevCode, setPhoneDevCode] = useState("");
+  const [phoneCodeRequested, setPhoneCodeRequested] = useState(false);
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneMessage, setPhoneMessage] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -157,6 +193,75 @@ export default function AccountScreen() {
       { text: t.account.cancel, style: "cancel" },
       { text: t.account.signOut, style: "destructive", onPress: logout },
     ]);
+  };
+
+  const openPhoneEditor = () => {
+    setIsPhoneEditorOpen(true);
+    setPhoneDraft(user?.phone ?? "");
+    setPhoneCode("");
+    setPhoneDevCode("");
+    setPhoneCodeRequested(false);
+    setPhoneMessage("");
+    setPhoneError("");
+  };
+
+  const handleSavePhone = async () => {
+    setPhoneBusy(true);
+    setPhoneError("");
+    setPhoneMessage("");
+    const result = await changePhone(phoneDraft);
+    setPhoneBusy(false);
+    if (result.ok) {
+      setPhoneMessage(t.account.phoneUpdated);
+      setPhoneCode("");
+      setPhoneDevCode("");
+      setPhoneCodeRequested(false);
+    } else {
+      setPhoneError(result.error ?? t.common.error);
+    }
+  };
+
+  const handleRequestPhoneVerification = async () => {
+    setPhoneBusy(true);
+    setPhoneError("");
+    setPhoneMessage("");
+    const result = await requestPhoneVerification();
+    setPhoneBusy(false);
+    if (result.ok) {
+      setPhoneCodeRequested(true);
+      setPhoneDevCode(result.devCode ?? "");
+      setPhoneCode("");
+    } else {
+      setPhoneError(result.error ?? t.common.error);
+    }
+  };
+
+  const handleVerifyPhone = async () => {
+    if (!/^\d{6}$/.test(phoneCode.trim())) {
+      setPhoneError(t.auth.phoneVerificationRequired);
+      return;
+    }
+
+    setPhoneBusy(true);
+    setPhoneError("");
+    setPhoneMessage("");
+    const result = await verifyPhoneCode(phoneCode.trim());
+    setPhoneBusy(false);
+    if (result.ok) {
+      setPhoneMessage(t.account.phoneVerifiedSuccess);
+      setPhoneCode("");
+      setPhoneDevCode("");
+      setPhoneCodeRequested(false);
+    } else {
+      setPhoneError(result.error ?? t.common.error);
+    }
+  };
+
+  const handleTwoFactorPress = () => {
+    Alert.alert(
+      t.account.twoFactor,
+      user?.phoneVerified ? t.account.smsTwoFactorNotReady : t.account.smsTwoFactorNeedsPhone,
+    );
   };
 
   return (
@@ -243,7 +348,27 @@ export default function AccountScreen() {
             icon="call-outline"
             label={t.account.phoneNumber}
             value={user?.phone}
-            onPress={() => {}}
+            valueDirection="ltr"
+            onPress={openPhoneEditor}
+            rightElement={
+              <View
+                style={[
+                  styles.phoneStatusBadge,
+                  {
+                    backgroundColor: user?.phoneVerified ? "#DCFCE7" : "#FEF3C7",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.phoneStatusText,
+                    { color: user?.phoneVerified ? "#15803D" : "#A16207" },
+                  ]}
+                >
+                  {user?.phoneVerified ? t.account.phoneVerified : t.account.phoneNotVerified}
+                </Text>
+              </View>
+            }
           />
           <MenuItem
             icon="school-outline"
@@ -252,6 +377,84 @@ export default function AccountScreen() {
             onPress={() => {}}
           />
         </View>
+        {isPhoneEditorOpen && (
+          <View style={[styles.phonePanel, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.phonePanelTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+              {t.account.changePhone}
+            </Text>
+            <TextInput
+              style={[
+                styles.phoneInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.foreground,
+                  textAlign: "left",
+                },
+              ]}
+              value={phoneDraft}
+              onChangeText={setPhoneDraft}
+              placeholder={t.auth.phonePlaceholder}
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="phone-pad"
+            />
+            <View style={[styles.phoneActions, isRTL && { flexDirection: "row-reverse" }]}>
+              <Pressable
+                onPress={handleSavePhone}
+                disabled={phoneBusy}
+                style={[styles.phoneActionBtn, { backgroundColor: colors.primary }]}
+              >
+                {phoneBusy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.phoneActionText}>{t.account.savePhone}</Text>}
+              </Pressable>
+              <Pressable
+                onPress={handleRequestPhoneVerification}
+                disabled={phoneBusy}
+                style={[styles.phoneSecondaryBtn, { borderColor: colors.primary }]}
+              >
+                <Text style={[styles.phoneSecondaryText, { color: colors.primary }]}>{t.account.verifyPhone}</Text>
+              </Pressable>
+            </View>
+            {(phoneCodeRequested || phoneDevCode !== "" || phoneCode !== "") && !user?.phoneVerified && (
+              <View style={styles.phoneCodeBox}>
+                {phoneDevCode !== "" && (
+                  <Text style={[styles.phoneDevCode, { color: colors.accent }, isRTL && styles.rtlText]}>
+                    {t.auth.phoneVerificationDevCode}: <Text style={styles.phoneDevCodeValue}>{phoneDevCode}</Text>
+                  </Text>
+                )}
+                <TextInput
+                  style={[
+                    styles.phoneInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.foreground,
+                      textAlign: "left",
+                    },
+                  ]}
+                  value={phoneCode}
+                  onChangeText={(value) => setPhoneCode(value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder={t.auth.phoneVerificationPlaceholder}
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+                <Pressable
+                  onPress={handleVerifyPhone}
+                  disabled={phoneBusy}
+                  style={[styles.phoneActionBtn, { backgroundColor: colors.primary }]}
+                >
+                  {phoneBusy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.phoneActionText}>{t.auth.verifyPhone}</Text>}
+                </Pressable>
+              </View>
+            )}
+            {phoneMessage !== "" && (
+              <Text style={[styles.phoneMessage, { color: "#15803D" }, isRTL && styles.rtlText]}>{phoneMessage}</Text>
+            )}
+            {phoneError !== "" && (
+              <Text style={[styles.phoneMessage, { color: colors.destructive }, isRTL && styles.rtlText]}>{phoneError}</Text>
+            )}
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -333,7 +536,8 @@ export default function AccountScreen() {
           <MenuItem
             icon="shield-checkmark-outline"
             label={t.account.twoFactor}
-            onPress={() => {}}
+            value={user?.phoneVerified ? t.account.phoneVerified : t.account.smsTwoFactorNeedsPhone}
+            onPress={handleTwoFactorPress}
           />
         </View>
       </View>
@@ -395,19 +599,16 @@ const styles = StyleSheet.create({
   avatarLetter: {
     fontSize: 32,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     color: "#0D1B2A",
   },
   userName: {
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     color: "#fff",
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.7)",
     marginBottom: 20,
   },
@@ -427,12 +628,10 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 20,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     color: "#fff",
   },
   statLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.7)",
     marginTop: 2,
   },
@@ -447,7 +646,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -476,12 +674,10 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   menuValue: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     marginTop: 1,
   },
   langRow: {
@@ -499,8 +695,78 @@ const styles = StyleSheet.create({
   },
   langBtnText: {
     fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
+  },
+  phoneStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  phoneStatusText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  phonePanel: {
+    borderWidth: 1,
+    borderRadius: 14,
+    marginTop: 10,
+    padding: 14,
+    gap: 10,
+  },
+  phonePanelTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  phoneInput: {
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    fontSize: 14,
+  },
+  phoneActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  phoneActionBtn: {
+    minHeight: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    flex: 1,
+  },
+  phoneActionText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  phoneSecondaryBtn: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    flex: 1,
+  },
+  phoneSecondaryText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  phoneCodeBox: {
+    gap: 10,
+  },
+  phoneDevCode: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  phoneDevCodeValue: {
+    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+  },
+  phoneMessage: {
+    fontSize: 12,
+    lineHeight: 17,
   },
   signInBtn: {
     marginHorizontal: 32,
@@ -513,18 +779,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   version: {
     textAlign: "center",
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     marginTop: 20,
     marginBottom: 8,
   },
   rtlText: {
     textAlign: "right",
     writingDirection: "rtl",
+  },
+  ltrValue: {
+    textAlign: "left",
+    writingDirection: "ltr",
+  },
+  ltrValueInRTL: {
+    textAlign: "right",
   },
   deviceCard: {
     borderRadius: 16,
@@ -546,14 +817,12 @@ const styles = StyleSheet.create({
   },
   deviceCardTitle: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "#fff",
     marginBottom: 2,
   },
   deviceCardSub: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     color: "rgba(255,255,255,0.65)",
   },
   devicePillsRow: {
@@ -578,14 +847,12 @@ const styles = StyleSheet.create({
   },
   devicePillText: {
     fontSize: 11,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
     color: "rgba(255,255,255,0.92)",
   },
   deviceManageText: {
     marginLeft: "auto",
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
     color: "rgba(255,255,255,0.7)",
   },

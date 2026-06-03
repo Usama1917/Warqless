@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AdminLanguageProvider } from "@/context/AdminLanguageContext";
 import { Sidebar } from "@/components/Sidebar";
 import LoginPage from "@/pages/login";
 import DashboardPage from "@/pages/dashboard";
@@ -51,7 +52,7 @@ function Router() {
       <Route path="/publishers" component={() => <ProtectedRoute component={PublishersPage} adminOnly />} />
       <Route path="/students" component={() => <ProtectedRoute component={StudentsPage} adminOnly />} />
       <Route path="/orders" component={() => <ProtectedRoute component={OrdersPage} />} />
-      <Route path="/lending" component={() => <ProtectedRoute component={LendingPage} />} />
+      <Route path="/lending" component={() => <ProtectedRoute component={LendingPage} adminOnly />} />
       <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
       <Route path="/security" component={() => <ProtectedRoute component={SecurityPage} adminOnly />} />
       <Route component={RootRedirect} />
@@ -63,12 +64,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </AuthProvider>
+        <AdminLanguageProvider>
+          <AuthProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+          </AuthProvider>
+        </AdminLanguageProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

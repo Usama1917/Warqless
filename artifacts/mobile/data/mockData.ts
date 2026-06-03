@@ -11,12 +11,16 @@ export type BookStatus = "published" | "draft" | "pending";
 export interface Book {
   id: string;
   title: string;
+  publisherId?: string;
   publisher: string;
   subject: string;
   grade: string;
   academicYear: string;
   price: number;
   originalPrice?: number;
+  couponCode?: string;
+  discountPct?: number;
+  discountResponsibility?: "platform" | "publisher" | "shared";
   description: string;
   pages: number;
   type: BookType;

@@ -16,8 +16,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { BookCard } from "@/components/BookCard";
 import { useApp } from "@/context/AppContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { BOOKS, BOOK_TYPES } from "@/data/mockData";
+import { BOOK_TYPES } from "@/data/mockData";
 import { useColors } from "@/hooks/useColors";
 
 export default function BookDetailScreen() {
@@ -26,14 +27,15 @@ export default function BookDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { purchasedBooks, purchaseBook, isAuthenticated } = useApp();
+  const { books } = useCatalog();
   const { t, isRTL } = useLanguage();
 
-  const book = BOOKS.find((b) => b.id === id);
+  const book = books.find((b) => b.id === id) ?? purchasedBooks.find((b) => b.id === id);
   const [purchasing, setPurchasing] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
 
   const isPurchased = purchasedBooks.some((b) => b.id === id);
-  const related = BOOKS.filter(
+  const related = books.filter(
     (b) => b.id !== id && (b.subject === book?.subject || b.grade === book?.grade)
   ).slice(0, 4);
 
@@ -77,11 +79,6 @@ export default function BookDetailScreen() {
     { icon: "bookmark" as const, text: t.reader.bookmarks + " & " + t.reader.highlights, check: true },
     { icon: "create" as const, text: t.reader.notes, check: true },
     { icon: "cloud" as const, text: "Cloud sync across devices", check: true },
-    {
-      icon: book.lendingEnabled ? ("people" as const) : ("people-outline" as const),
-      text: `${t.book.lending}: ${book.lendingEnabled ? t.book.lendingEnabled : t.book.lendingDisabled}`,
-      check: book.lendingEnabled,
-    },
     { icon: "phone-portrait" as const, text: `${t.book.deviceLimit}: 2 ${t.book.devices}`, check: true },
   ];
 
@@ -340,7 +337,6 @@ const styles = StyleSheet.create({
   notFoundText: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   backBtn: {
     position: "absolute",
@@ -403,7 +399,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 22,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     lineHeight: 30,
   },
   wishlistBtn: {
@@ -417,7 +412,6 @@ const styles = StyleSheet.create({
   },
   publisher: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   ratingRow: {
@@ -428,12 +422,10 @@ const styles = StyleSheet.create({
   ratingValue: {
     fontSize: 14,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginLeft: 4,
   },
   ratingCount: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
   },
   tagsRow: {
     flexDirection: "row",
@@ -448,7 +440,6 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   priceBox: {
@@ -460,7 +451,6 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
     marginBottom: 2,
   },
   priceRow: {
@@ -471,11 +461,9 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 24,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   originalPrice: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     textDecorationLine: "line-through",
   },
   discountBadge: {
@@ -487,18 +475,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   pagesLabel: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   featuresSection: { gap: 10 },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
     marginBottom: 4,
   },
   featureRow: {
@@ -508,12 +493,10 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
   },
   descSection: { gap: 8 },
   description: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     lineHeight: 22,
   },
   licenseBox: {
@@ -526,7 +509,6 @@ const styles = StyleSheet.create({
   licenseText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     lineHeight: 18,
   },
   relatedSection: { gap: 8 },
@@ -551,7 +533,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 17,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   rtlText: {
     textAlign: "right",

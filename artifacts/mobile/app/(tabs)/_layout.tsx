@@ -17,7 +17,6 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: t.tabs.home }} />
       <Tabs.Screen name="browse" options={{ title: t.tabs.browse }} />
       <Tabs.Screen name="library" options={{ title: t.tabs.library }} />
-      <Tabs.Screen name="borrowed" options={{ title: t.tabs.borrowed }} />
       <Tabs.Screen name="account" options={{ title: t.tabs.account }} />
     </Tabs>
   );

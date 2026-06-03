@@ -2,7 +2,9 @@ import { useState } from "react";
 import { ArrowLeftRight, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
-import { LENDING_RECORDS, LendingRecord } from "@/data/mockData";
+import { BOOKS, LENDING_RECORDS, LendingRecord } from "@/data/mockData";
+import { useAuth } from "@/context/AuthContext";
+import { useAdminLanguage } from "@/context/AdminLanguageContext";
 
 function statusVariant(s: LendingRecord["status"]) {
   if (s === "active") return "default" as const;
@@ -17,31 +19,40 @@ function StatusIcon({ status }: { status: LendingRecord["status"] }) {
 }
 
 export default function LendingPage() {
+  const { user } = useAuth();
+  const { t, formatDate } = useAdminLanguage();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const isAdmin = user?.role === "admin";
+  const publisherBookIds = new Set(
+    BOOKS.filter((b) => b.publisherId === user?.publisherId).map((b) => b.id),
+  );
+  const records = isAdmin
+    ? LENDING_RECORDS
+    : LENDING_RECORDS.filter((r) => publisherBookIds.has(r.bookId));
 
-  const filtered = LENDING_RECORDS.filter(
+  const filtered = records.filter(
     (r) => statusFilter === "all" || r.status === statusFilter
   );
 
   const stats = {
-    active: LENDING_RECORDS.filter((r) => r.status === "active").length,
-    returned: LENDING_RECORDS.filter((r) => r.status === "returned").length,
-    overdue: LENDING_RECORDS.filter((r) => r.status === "overdue").length,
+    active: records.filter((r) => r.status === "active").length,
+    returned: records.filter((r) => r.status === "returned").length,
+    overdue: records.filter((r) => r.status === "overdue").length,
   };
 
   return (
     <div className="p-6">
       <PageHeader
-        title="Lending"
-        subtitle={`${stats.active} active · ${stats.returned} returned · ${stats.overdue} overdue`}
+        title={t.lending.title}
+        subtitle={t.lending.subtitle(stats.active, stats.returned, stats.overdue)}
       />
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-4 mb-5">
         {[
-          { label: "Active Loans", value: stats.active, color: "bg-primary/10 text-primary", icon: Clock },
-          { label: "Returned", value: stats.returned, color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2 },
-          { label: "Overdue", value: stats.overdue, color: "bg-red-50 text-red-600", icon: AlertTriangle },
+          { label: t.lending.activeLoans, value: stats.active, color: "bg-primary/10 text-primary", icon: Clock },
+          { label: t.common.returned, value: stats.returned, color: "bg-emerald-50 text-emerald-700", icon: CheckCircle2 },
+          { label: t.common.overdue, value: stats.overdue, color: "bg-red-50 text-red-600", icon: AlertTriangle },
         ].map((s) => (
           <div key={s.label} className="bg-card border border-card-border rounded-xl p-4 shadow-sm">
             <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-bold ${s.color}`}>
@@ -65,7 +76,7 @@ export default function LendingPage() {
                 : "bg-muted text-muted-foreground hover:text-foreground"
             }`}
           >
-            {f}
+            {t.common[f]}
           </button>
         ))}
       </div>
@@ -85,32 +96,32 @@ export default function LendingPage() {
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                     <span>
-                      <span className="font-medium text-foreground">Owner:</span> {record.ownerName}
+                      <span className="font-medium text-foreground">{t.lending.owner}:</span> {record.ownerName}
                     </span>
                     <span>
-                      <span className="font-medium text-foreground">Borrower:</span> {record.borrowerName}
+                      <span className="font-medium text-foreground">{t.lending.borrower}:</span> {record.borrowerName}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
                     <span>
-                      Lent: {new Date(record.lentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {t.lending.lent}: {formatDate(record.lentAt, { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                     <span>
-                      Due: {new Date(record.dueAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {t.lending.due}: {formatDate(record.dueAt, { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                     {record.returnedAt && (
                       <span className="text-emerald-600">
-                        Returned: {new Date(record.returnedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                        {t.lending.returned}: {formatDate(record.returnedAt, { month: "short", day: "numeric", year: "numeric" })}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Badge variant={statusVariant(record.status)}>{record.status}</Badge>
+                <Badge variant={statusVariant(record.status)}>{t.common[record.status]}</Badge>
                 {record.status === "active" && (
                   <button className="text-xs text-destructive border border-destructive/30 px-2.5 py-1 rounded-lg hover:bg-destructive/5 transition">
-                    Recall
+                    {t.common.recall}
                   </button>
                 )}
               </div>
@@ -119,7 +130,7 @@ export default function LendingPage() {
         ))}
         {filtered.length === 0 && (
           <div className="py-16 text-center text-muted-foreground text-sm bg-card border border-card-border rounded-xl">
-            No lending records match your filter.
+            {t.lending.noRecords}
           </div>
         )}
       </div>

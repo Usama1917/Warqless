@@ -32,7 +32,6 @@ const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
   index:    { active: "home",    inactive: "home-outline"    },
   browse:   { active: "search",  inactive: "search-outline"  },
   library:  { active: "library", inactive: "library-outline" },
-  borrowed: { active: "repeat",  inactive: "repeat"          },
   account:  { active: "person",  inactive: "person-outline"  },
 };
 
@@ -56,6 +55,7 @@ function TabItem({
   onPress,
   onLongPress,
   isDark,
+  isRTL,
 }: {
   route:       string;
   isFocused:   boolean;
@@ -63,6 +63,7 @@ function TabItem({
   onPress:     () => void;
   onLongPress: () => void;
   isDark:      boolean;
+  isRTL:       boolean;
 }) {
   const colors = useColors();
 
@@ -122,8 +123,9 @@ function TabItem({
             styles.tabLabel,
             {
               color:      isFocused ? activeColor : inactiveColor,
-              fontFamily: isFocused ? "Inter_600SemiBold" : "Inter_400Regular",
+              fontWeight: isFocused ? "600" : "400",
               opacity:    labelOpacity,
+              writingDirection: isRTL ? "rtl" : "ltr",
             },
           ]}
         >
@@ -239,10 +241,7 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
         />
 
         {/* Tabs area */}
-        <View
-          style={[styles.tabs, isRTL && styles.tabsRTL]}
-          onLayout={onTabsLayout}
-        >
+        <View style={styles.tabs} onLayout={onTabsLayout}>
           {/* ── Shared sliding indicator ── */}
           {tabW > 0 && (
             <Animated.View
@@ -299,6 +298,7 @@ export function GlassTabBar({ state, descriptors, navigation }: TabBarProps) {
                 onPress={onPress}
                 onLongPress={onLongPress}
                 isDark={isDark}
+                isRTL={isRTL}
               />
             );
           })}
@@ -337,9 +337,6 @@ const styles = StyleSheet.create({
     paddingVertical:   6,
     zIndex:         2,
   },
-  tabsRTL: {
-    flexDirection: "row-reverse",
-  },
   slidingIndicator: {
     position:     "absolute",
     top:          6,
@@ -362,6 +359,6 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize:      10,
-    letterSpacing: 0.1,
+    letterSpacing: 0,
   },
 });

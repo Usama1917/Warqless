@@ -52,7 +52,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   labelSmall: {

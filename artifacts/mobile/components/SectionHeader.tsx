@@ -55,16 +55,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   subtitle: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     marginTop: 2,
   },
   seeAll: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   rtlText: {

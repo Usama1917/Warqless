@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,11 +19,19 @@ import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 
+function isValidEgyptPhone(value: string) {
+  let compact = value.trim().replace(/[\s().-]/g, "");
+  if (compact.startsWith("00")) compact = `+${compact.slice(2)}`;
+  if (/^(010|011|012|015)\d{8}$/.test(compact)) compact = `+2${compact}`;
+  if (/^20(10|11|12|15)\d{8}$/.test(compact)) compact = `+${compact}`;
+  return /^\+20(10|11|12|15)\d{8}$/.test(compact);
+}
+
 export default function AuthScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { login, register } = useApp();
+  const { login, register, requestPhoneVerification, verifyPhoneCode, sessionMessage, clearSessionMessage } = useApp();
   const { t, isRTL } = useLanguage();
 
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -32,11 +40,36 @@ export default function AuthScreen() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [pendingPhoneVerification, setPendingPhoneVerification] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [devOtpCode, setDevOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!sessionMessage) return;
+    setError(sessionMessage === "expired" ? t.auth.sessionExpired : t.auth.forceLogout);
+    clearSessionMessage();
+  }, [clearSessionMessage, sessionMessage, t.auth.forceLogout, t.auth.sessionExpired]);
+
   const handleSubmit = async () => {
     setError("");
+    if (pendingPhoneVerification) {
+      if (!/^\d{6}$/.test(otpCode.trim())) {
+        setError(t.auth.phoneVerificationRequired);
+        return;
+      }
+      setLoading(true);
+      const result = await verifyPhoneCode(otpCode.trim());
+      setLoading(false);
+      if (result.ok) {
+        router.replace("/(tabs)");
+      } else {
+        setError(result.error ?? t.auth.error);
+      }
+      return;
+    }
+
     if (!email || !password) {
       setError(t.auth.fillAll);
       return;
@@ -49,6 +82,8 @@ export default function AuthScreen() {
           router.replace("/(tabs)");
         } else if (result === "device_blocked") {
           setError(t.protection.deviceBlockedDesc + "\n\n" + t.protection.deviceChangeInfo);
+        } else if (result === "security_unavailable") {
+          setError(t.protection.securityUnavailableDesc);
         } else {
           setError(t.auth.invalidCredentials);
         }
@@ -58,9 +93,24 @@ export default function AuthScreen() {
           setLoading(false);
           return;
         }
-        const ok = await register(name, email, phone, password);
-        if (ok) {
-          router.replace("/(tabs)");
+        if (!isValidEgyptPhone(phone)) {
+          setError(t.auth.phoneInvalid);
+          setLoading(false);
+          return;
+        }
+        const result = await register(name, email, phone, password);
+        if (result.status === "ok") {
+          setPendingPhoneVerification(true);
+          setDevOtpCode(result.devCode ?? "");
+          setOtpCode("");
+        } else if (result.status === "invalid_phone") {
+          setError(t.auth.phoneInvalid);
+        } else if (result.status === "device_blocked") {
+          setError(t.protection.deviceBlockedDesc + "\n\n" + t.protection.deviceChangeInfo);
+        } else if (result.status === "security_unavailable") {
+          setError(t.protection.securityUnavailableDesc);
+        } else if (result.status === "phone_verification_unavailable") {
+          setError(result.error ?? t.auth.error);
         } else {
           setError(t.auth.error);
         }
@@ -69,6 +119,19 @@ export default function AuthScreen() {
       setError(t.auth.error);
     }
     setLoading(false);
+  };
+
+  const handleResendCode = async () => {
+    setError("");
+    setLoading(true);
+    const result = await requestPhoneVerification();
+    setLoading(false);
+    if (result.ok) {
+      setDevOtpCode(result.devCode ?? "");
+      setOtpCode("");
+    } else {
+      setError(result.error ?? t.auth.error);
+    }
   };
 
   return (
@@ -116,6 +179,9 @@ export default function AuthScreen() {
               onPress={() => {
                 setMode(m);
                 setError("");
+                setPendingPhoneVerification(false);
+                setOtpCode("");
+                setDevOtpCode("");
               }}
             >
               <Text
@@ -238,6 +304,62 @@ export default function AuthScreen() {
             </View>
           </View>
 
+          {pendingPhoneVerification && (
+            <View
+              style={[
+                styles.verificationBox,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <View style={[styles.verificationHeader, isRTL && { flexDirection: "row-reverse" }]}>
+                <View style={[styles.verificationIcon, { backgroundColor: colors.primary + "15" }]}>
+                  <Ionicons name="call-outline" size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.verificationTitle, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                    {t.auth.phoneVerificationTitle}
+                  </Text>
+                  <Text style={[styles.verificationDesc, { color: colors.mutedForeground }, isRTL && styles.rtlText]}>
+                    {t.auth.phoneVerificationDesc}
+                  </Text>
+                </View>
+              </View>
+
+              {devOtpCode !== "" && (
+                <Text style={[styles.devCode, { color: colors.accent }, isRTL && styles.rtlText]}>
+                  {t.auth.phoneVerificationDevCode}: <Text style={styles.devCodeValue}>{devOtpCode}</Text>
+                </Text>
+              )}
+
+              <Text style={[styles.fieldLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+                {t.auth.phoneVerificationCode}
+              </Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.foreground,
+                    textAlign: "left",
+                  },
+                ]}
+                placeholder={t.auth.phoneVerificationPlaceholder}
+                placeholderTextColor={colors.mutedForeground}
+                value={otpCode}
+                onChangeText={(value) => setOtpCode(value.replace(/\D/g, "").slice(0, 6))}
+                keyboardType="number-pad"
+                maxLength={6}
+              />
+              <Pressable onPress={handleResendCode} disabled={loading} style={styles.resendBtn}>
+                <Text style={[styles.resendText, { color: colors.primary }]}>{t.auth.resendCode}</Text>
+              </Pressable>
+            </View>
+          )}
+
           {error !== "" && (
             <View
               style={[
@@ -268,7 +390,7 @@ export default function AuthScreen() {
               <ActivityIndicator color="#fff" size="small" />
             ) : (
               <Text style={styles.submitText}>
-                {mode === "login" ? t.auth.signIn : t.auth.createAccount}
+                {pendingPhoneVerification ? t.auth.verifyPhone : mode === "login" ? t.auth.signIn : t.auth.createAccount}
               </Text>
             )}
           </Pressable>
@@ -313,11 +435,9 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   tagline: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
     marginTop: 2,
   },
   tabRow: {
@@ -335,7 +455,6 @@ const styles = StyleSheet.create({
   tabBtnActive: {},
   tabBtnText: {
     fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   form: {
@@ -347,7 +466,6 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
     fontWeight: "600",
   },
   input: {
@@ -356,7 +474,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 16,
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
   },
   passwordWrap: {
     alignItems: "center",
@@ -368,10 +485,51 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
   },
   eyeBtn: {
     padding: 4,
+  },
+  verificationBox: {
+    gap: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 14,
+  },
+  verificationHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  verificationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verificationTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  verificationDesc: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  devCode: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  devCodeValue: {
+    fontFamily: Platform.select({ ios: "Menlo", android: "monospace", default: "monospace" }),
+  },
+  resendBtn: {
+    alignSelf: "flex-start",
+    paddingVertical: 2,
+  },
+  resendText: {
+    fontSize: 13,
+    fontWeight: "700",
   },
   errorBox: {
     alignItems: "center",
@@ -382,7 +540,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
     flex: 1,
   },
   submitBtn: {
@@ -396,7 +553,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
-    fontFamily: "Inter_700Bold",
   },
   forgotBtn: {
     alignItems: "center",
@@ -404,12 +560,10 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
     fontWeight: "500",
   },
   terms: {
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
     textAlign: "center",
     lineHeight: 18,
   },

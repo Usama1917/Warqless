@@ -11,6 +11,7 @@ import {
   verifyPhoneVerificationCode,
 } from "./phoneVerification";
 import { sendSms, type SmsPurpose } from "./smsService";
+import { runExclusive } from "./stateMutex";
 
 export type PhoneOtpPurpose = SmsPurpose;
 
@@ -199,48 +200,6 @@ function messageForPurpose(purpose: PhoneOtpPurpose, code: string) {
   return `Your Warqless phone verification code is ${code}.`;
 }
 
-function markMatchingPhonesVerified(state: CatalogState, phone: string, verifiedAt: string) {
-  let changed = false;
-
-  if (Array.isArray(state.students)) {
-    state.students = state.students.map((student) => {
-      if (normalizeEgyptPhone(student.phone) !== phone) return student;
-      changed = true;
-      return {
-        ...student,
-        phone,
-        phoneVerified: true,
-        phoneVerifiedAt: verifiedAt,
-        phoneVerificationCodeHash: undefined,
-        phoneVerificationExpiresAt: undefined,
-        phoneVerificationAttempts: 0,
-      };
-    });
-  }
-
-  const accounts = state.adminPanelSettings?.accounts;
-  if (Array.isArray(accounts)) {
-    state.adminPanelSettings = {
-      ...state.adminPanelSettings,
-      accounts: accounts.map((account) => {
-        if (normalizeEgyptPhone(account.phone) !== phone) return account;
-        changed = true;
-        return {
-          ...account,
-          phone,
-          phoneVerified: true,
-          phoneVerifiedAt: verifiedAt,
-          phoneVerificationCodeHash: undefined,
-          phoneVerificationExpiresAt: undefined,
-          phoneVerificationAttempts: 0,
-        };
-      }),
-    };
-  }
-
-  return changed;
-}
-
 function createRepeatedFailureSecurityEvent(phone: string, purpose: PhoneOtpPurpose): StoredSecurityEvent {
   return {
     id: `evt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -362,66 +321,78 @@ export async function verifyPhoneOtp(body: unknown): Promise<VerifyOtpResult> {
     throw new PhoneOtpError(400, "Enter the 6-digit verification code.", { success: false });
   }
 
-  const state = await readState();
-  const now = new Date();
-  const nowMs = now.getTime();
-  const nowIso = now.toISOString();
-  const records = sanitizePhoneOtpRecords(getOtpRecords(state), nowMs);
-  const active = findActiveOtp(records, phone, purpose, nowMs);
+  // Serialize the OTP attempt-counter read-modify-write so concurrent verify
+  // requests for the same phone cannot each increment attempts by one off the
+  // same stale value and thereby brute-force past maxAttempts. runExclusive
+  // makes the readState -> check attempts -> writeState sequence atomic in-process.
+  return runExclusive(async () => {
+    const state = await readState();
+    const now = new Date();
+    const nowMs = now.getTime();
+    const nowIso = now.toISOString();
+    const records = sanitizePhoneOtpRecords(getOtpRecords(state), nowMs);
+    const active = findActiveOtp(records, phone, purpose, nowMs);
 
-  if (!active) {
-    throw new PhoneOtpError(400, "No active verification code found. Request a new code.", { success: false });
-  }
+    if (!active) {
+      throw new PhoneOtpError(400, "No active verification code found. Request a new code.", { success: false });
+    }
 
-  if (active.attempts >= active.maxAttempts) {
-    appendRepeatedFailureEventIfPossible(state, phone, purpose);
-    state.phoneOtpCodes = records;
-    state.updatedAt = nowIso;
-    await writeState(state);
-    throw new PhoneOtpError(429, "Too many verification attempts. Request a new code.", { success: false });
-  }
+    if (active.attempts >= active.maxAttempts) {
+      appendRepeatedFailureEventIfPossible(state, phone, purpose);
+      state.phoneOtpCodes = records;
+      state.updatedAt = nowIso;
+      await writeState(state);
+      throw new PhoneOtpError(429, "Too many verification attempts. Request a new code.", { success: false });
+    }
 
-  if (!verifyPhoneVerificationCode(code, active.codeHash)) {
-    const nextAttempts = active.attempts + 1;
-    const tooManyAttempts = nextAttempts >= active.maxAttempts;
-    const nextRecords = records.map((record) =>
+    if (!verifyPhoneVerificationCode(code, active.codeHash)) {
+      const nextAttempts = active.attempts + 1;
+      const tooManyAttempts = nextAttempts >= active.maxAttempts;
+      const nextRecords = records.map((record) =>
+        record.id === active.id
+          ? { ...record, attempts: nextAttempts, updatedAt: nowIso }
+          : record
+      );
+
+      state.phoneOtpCodes = nextRecords;
+      if (tooManyAttempts) {
+        appendRepeatedFailureEventIfPossible(state, phone, purpose);
+      }
+      state.updatedAt = nowIso;
+      await writeState(state);
+
+      throw new PhoneOtpError(tooManyAttempts ? 429 : 400, tooManyAttempts
+        ? "Too many verification attempts. Request a new code."
+        : "Incorrect verification code.", {
+        success: false,
+        attemptsRemaining: Math.max(active.maxAttempts - nextAttempts, 0),
+      });
+    }
+
+    state.phoneOtpCodes = records.map((record) =>
       record.id === active.id
-        ? { ...record, attempts: nextAttempts, updatedAt: nowIso }
+        ? { ...record, consumedAt: nowIso, verifiedAt: nowIso, updatedAt: nowIso }
         : record
     );
 
-    state.phoneOtpCodes = nextRecords;
-    if (tooManyAttempts) {
-      appendRepeatedFailureEventIfPossible(state, phone, purpose);
-    }
+    // SMS-OTP trust model: this is the unauthenticated pre-login phone-verification
+    // path, so the only thing proven here is possession of an SMS code for this
+    // phone+purpose. We deliberately do NOT flip phoneVerified on other accounts
+    // that merely share this phone number — an unauthenticated caller must not be
+    // able to mutate the verified state of student or admin-panel accounts.
+    // Account-scoped verification (which knows the actor's id) is handled by the
+    // authenticated /students/:id/phone/verify and /admin/settings/phone/verify
+    // endpoints. Here we only report that the OTP itself verified successfully.
+    const phoneVerified = purpose === "phone_verification" ? true : undefined;
+
     state.updatedAt = nowIso;
     await writeState(state);
 
-    throw new PhoneOtpError(tooManyAttempts ? 429 : 400, tooManyAttempts
-      ? "Too many verification attempts. Request a new code."
-      : "Incorrect verification code.", {
-      success: false,
-      attemptsRemaining: Math.max(active.maxAttempts - nextAttempts, 0),
-    });
-  }
-
-  state.phoneOtpCodes = records.map((record) =>
-    record.id === active.id
-      ? { ...record, consumedAt: nowIso, verifiedAt: nowIso, updatedAt: nowIso }
-      : record
-  );
-
-  const phoneVerified = purpose === "phone_verification"
-    ? markMatchingPhonesVerified(state, phone, nowIso) || true
-    : undefined;
-
-  state.updatedAt = nowIso;
-  await writeState(state);
-
-  return {
-    success: true,
-    phone,
-    purpose,
-    phoneVerified,
-  };
+    return {
+      success: true,
+      phone,
+      purpose,
+      phoneVerified,
+    };
+  });
 }

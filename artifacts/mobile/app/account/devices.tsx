@@ -171,12 +171,19 @@ export default function DevicesScreen() {
   const [requestError, setRequestError] = useState("");
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const successAnim = useRef(new Animated.Value(0)).current;
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDark = false;
   const topPad = Platform.OS === "web" ? 0 : insets.top;
 
   useEffect(() => {
     getCurrentDeviceId().then(setDeviceId);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
   }, []);
 
   const handleSubmitRequest = async (reason: string) => {
@@ -202,13 +209,15 @@ export default function DevicesScreen() {
       setResetRequest(req.status === "pending" ? req : null);
       setShowModal(false);
       setShowSuccess(true);
+      successAnim.setValue(0);
       Animated.spring(successAnim, {
         toValue: 1,
         useNativeDriver: true,
         tension: 60,
         friction: 8,
       }).start();
-      setTimeout(() => setShowSuccess(false), 5000);
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      successTimerRef.current = setTimeout(() => setShowSuccess(false), 5000);
     } catch (error) {
       if (error instanceof DeviceResetRequestError) {
         if (error.reason === "pending_request") setRequestError(t.device.resetPendingError);

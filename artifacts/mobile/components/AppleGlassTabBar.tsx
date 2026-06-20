@@ -1,16 +1,31 @@
 /**
- * AppleGlassTabBar - clean iOS-style glass bottom navigation.
+ * AppleGlassTabBar - iOS Liquid Glass bottom navigation.
  *
- * BlurView is used only as the background layer. Tab icons and labels are
- * rendered above it so they stay sharp.
+ * On iPhones that support Liquid Glass (iOS 26+), the bar and the active-tab
+ * capsule are rendered with the real `expo-glass-effect` material, giving the
+ * authentic Apple refraction / specular look. Everywhere else (older iOS,
+ * Android, web, or a runtime without the native module e.g. some Expo Go
+ * builds) it gracefully falls back to a frosted `expo-blur` glass so it always
+ * renders and never crashes.
+ *
+ * Colors follow the device light/dark appearance: icons/labels use the active
+ * design tokens, the glass material auto-adapts, and the blur fallback switches
+ * tint + tones between light and dark. Icons and labels are always drawn above
+ * the glass so they stay sharp.
  */
 
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import React, { useEffect, useRef } from "react";
+import {
+  GlassView,
+  isGlassEffectAPIAvailable,
+  isLiquidGlassAvailable,
+} from "expo-glass-effect";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
+  LayoutChangeEvent,
   Platform,
   Pressable,
   StyleSheet,
@@ -18,20 +33,54 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTheme } from "@/context/ThemeContext";
 
-const ACTIVE_BLACK = "#000000";
-const INACTIVE_GRAY = "#8A8A8E";
+/**
+ * Detect (once) whether the real iOS Liquid Glass material is usable. The
+ * try/catch guards runtimes where the native module is absent — there the
+ * availability calls throw and we fall back to BlurView.
+ */
+function detectLiquidGlass(): boolean {
+  if (Platform.OS !== "ios") return false;
+  try {
+    return isGlassEffectAPIAvailable() && isLiquidGlassAvailable();
+  } catch {
+    return false;
+  }
+}
+
+const LIQUID_GLASS = detectLiquidGlass();
 
 const BAR_BASE_HEIGHT = 74;
 const TOP_RADIUS = 30;
 const H_PAD = 10;
 const TOP_PAD = 8;
 const SAFE_AREA_EXTRA = 6;
+const CAPSULE_RADIUS = 22;
 
-const GLASS_BG = "rgba(255,255,255,0.88)";
-const GLASS_WASH = "rgba(255,255,255,0.16)";
-const TOP_BORDER = "rgba(0,0,0,0.06)";
+/** Per-scheme tones for the bar/blur/capsule (the glass material adapts on its own). */
+const BAR_THEME = {
+  light: {
+    glassBg: "rgba(255,255,255,0.88)",
+    wash: "rgba(255,255,255,0.16)",
+    topHairline: "rgba(255,255,255,0.68)",
+    barBorder: "rgba(0,0,0,0.06)",
+    pillBg: "rgba(255,255,255,0.55)",
+    pillBorder: "rgba(255,255,255,0.7)",
+    blurTint: "light" as const,
+  },
+  dark: {
+    glassBg: "rgba(18,28,45,0.82)",
+    wash: "rgba(255,255,255,0.04)",
+    topHairline: "rgba(255,255,255,0.12)",
+    barBorder: "rgba(255,255,255,0.08)",
+    pillBg: "rgba(255,255,255,0.12)",
+    pillBorder: "rgba(255,255,255,0.16)",
+    blurTint: "dark" as const,
+  },
+};
 
 const TAB_ICONS: Record<string, { active: string; inactive: string }> = {
   index: { active: "home", inactive: "home-outline" },
@@ -56,6 +105,8 @@ function TabItem({
   onPress,
   onLongPress,
   isRTL,
+  activeColor,
+  inactiveColor,
 }: {
   route: string;
   isFocused: boolean;
@@ -63,6 +114,8 @@ function TabItem({
   onPress: () => void;
   onLongPress: () => void;
   isRTL: boolean;
+  activeColor: string;
+  inactiveColor: string;
 }) {
   const pressScale = useRef(new Animated.Value(1)).current;
   const activeAnim = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
@@ -130,7 +183,7 @@ function TabItem({
           <Ionicons
             name={(isFocused ? icons.active : icons.inactive) as any}
             size={isFocused ? 29 : 27}
-            color={isFocused ? ACTIVE_BLACK : INACTIVE_GRAY}
+            color={isFocused ? activeColor : inactiveColor}
           />
         </Animated.View>
 
@@ -139,7 +192,7 @@ function TabItem({
           style={[
             styles.tabLabel,
             {
-              color: isFocused ? ACTIVE_BLACK : INACTIVE_GRAY,
+              color: isFocused ? activeColor : inactiveColor,
               fontWeight: isFocused ? "700" : "500",
               opacity: contentOpacity,
               writingDirection: isRTL ? "rtl" : "ltr",
@@ -153,6 +206,53 @@ function TabItem({
   );
 }
 
+/**
+ * The animated active-tab capsule. It slides under the focused tab with a
+ * spring (the "liquid" motion). In Liquid Glass mode it is a real GlassView;
+ * otherwise a translucent capsule that reads as glass over the BlurView.
+ */
+function ActivePill({
+  slotWidth,
+  translateX,
+  pillBg,
+  pillBorder,
+  glassColorScheme,
+}: {
+  slotWidth: number;
+  translateX: Animated.Value;
+  pillBg: string;
+  pillBorder: string;
+  glassColorScheme: "light" | "dark";
+}) {
+  if (slotWidth <= 0) return null;
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.pillSlot,
+        { width: slotWidth, transform: [{ translateX }] },
+      ]}
+    >
+      {LIQUID_GLASS ? (
+        <GlassView
+          glassEffectStyle="clear"
+          colorScheme={glassColorScheme}
+          isInteractive
+          style={styles.pillCapsule}
+        />
+      ) : (
+        <View
+          style={[
+            styles.pillCapsule,
+            { backgroundColor: pillBg, borderWidth: 1, borderColor: pillBorder },
+          ]}
+        />
+      )}
+    </Animated.View>
+  );
+}
+
 export function AppleGlassTabBar({
   state,
   descriptors,
@@ -160,6 +260,12 @@ export function AppleGlassTabBar({
 }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { isRTL } = useLanguage();
+  const colors = useColors();
+  const { scheme } = useTheme();
+  const isDark = scheme === "dark";
+  const theme = isDark ? BAR_THEME.dark : BAR_THEME.light;
+  const activeColor = colors.foreground;
+  const inactiveColor = colors.mutedForeground;
 
   const numTabs = state.routes.length;
   const routes = isRTL ? [...state.routes].reverse() : state.routes;
@@ -167,13 +273,36 @@ export function AppleGlassTabBar({
     ? (visualIndex: number) => numTabs - 1 - visualIndex
     : (visualIndex: number) => visualIndex;
 
+  // Visual (left-to-right) position of the focused tab, accounting for RTL.
+  const visualActiveIndex = isRTL ? numTabs - 1 - state.index : state.index;
+
+  const [contentWidth, setContentWidth] = useState(0);
+  const slotWidth = numTabs > 0 ? contentWidth / numTabs : 0;
+  const pillX = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (slotWidth <= 0) return;
+    Animated.spring(pillX, {
+      toValue: visualActiveIndex * slotWidth,
+      useNativeDriver: true,
+      damping: 18,
+      stiffness: 200,
+      mass: 0.9,
+    }).start();
+  }, [pillX, slotWidth, visualActiveIndex]);
+
+  const onContentLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && w !== contentWidth) setContentWidth(w);
+  };
+
   const barHeight = BAR_BASE_HEIGHT + insets.bottom;
   const nativeShadow =
     Platform.OS !== "web"
       ? {
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.08,
+          shadowOpacity: isDark ? 0.3 : 0.08,
           shadowRadius: 24,
           elevation: 12,
         }
@@ -189,70 +318,105 @@ export function AppleGlassTabBar({
           style={[
             styles.bar,
             {
-              backgroundColor: GLASS_BG,
+              backgroundColor: LIQUID_GLASS ? "transparent" : theme.glassBg,
+              borderColor: theme.barBorder,
               paddingBottom: insets.bottom + SAFE_AREA_EXTRA,
               ...(Platform.OS === "web"
                 ? ({
                     backdropFilter: "blur(22px) saturate(170%)",
                     WebkitBackdropFilter: "blur(22px) saturate(170%)",
-                    boxShadow: "0 -4px 24px rgba(17,24,39,0.08)",
+                    boxShadow: isDark
+                      ? "0 -4px 24px rgba(0,0,0,0.4)"
+                      : "0 -4px 24px rgba(17,24,39,0.08)",
                   } as object)
                 : {}),
             },
           ]}
         >
-          {Platform.OS !== "web" && (
-            <BlurView
-              intensity={50}
-              tint="light"
+          {/* Background glass material */}
+          {LIQUID_GLASS ? (
+            <GlassView
+              glassEffectStyle="regular"
+              colorScheme={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
+          ) : (
+            Platform.OS !== "web" && (
+              <BlurView
+                intensity={50}
+                tint={theme.blurTint}
+                style={StyleSheet.absoluteFill}
+              />
+            )
           )}
 
-          <View pointerEvents="none" style={styles.glassWash} />
-          <View pointerEvents="none" style={styles.topBorder} />
+          {/* Subtle frost wash only in the non-Liquid fallback so it doesn't
+              milk the real glass. */}
+          {!LIQUID_GLASS && (
+            <View
+              pointerEvents="none"
+              style={[styles.glassWash, { backgroundColor: theme.wash }]}
+            />
+          )}
+          <View
+            pointerEvents="none"
+            style={[styles.topBorder, { backgroundColor: theme.topHairline }]}
+          />
 
-          <View style={styles.tabs}>
-            {routes.map((route, visualIndex) => {
-              const realIndex = resolveIndex(visualIndex);
-              const { options } = descriptors[route.key];
-              const isFocused = state.index === realIndex;
-              const label =
-                typeof options.tabBarLabel === "string"
-                  ? options.tabBarLabel
-                  : options.title ?? route.name;
+          {/* Padded content area: active capsule + tab items share this box */}
+          <View style={styles.content} onLayout={onContentLayout}>
+            <ActivePill
+              slotWidth={slotWidth}
+              translateX={pillX}
+              pillBg={theme.pillBg}
+              pillBorder={theme.pillBorder}
+              glassColorScheme={isDark ? "dark" : "light"}
+            />
 
-              const onPress = () => {
-                const event = navigation.emit({
-                  type: "tabPress",
-                  target: route.key,
-                  canPreventDefault: true,
-                });
+            <View style={styles.tabs}>
+              {routes.map((route, visualIndex) => {
+                const realIndex = resolveIndex(visualIndex);
+                const { options } = descriptors[route.key];
+                const isFocused = state.index === realIndex;
+                const label =
+                  typeof options.tabBarLabel === "string"
+                    ? options.tabBarLabel
+                    : options.title ?? route.name;
 
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(route.name);
-                }
-              };
+                const onPress = () => {
+                  const event = navigation.emit({
+                    type: "tabPress",
+                    target: route.key,
+                    canPreventDefault: true,
+                  });
 
-              const onLongPress = () => {
-                navigation.emit({
-                  type: "tabLongPress",
-                  target: route.key,
-                });
-              };
+                  if (!isFocused && !event.defaultPrevented) {
+                    navigation.navigate(route.name);
+                  }
+                };
 
-              return (
-                <TabItem
-                  key={route.key}
-                  route={route.name}
-                  isFocused={isFocused}
-                  label={label}
-                  onPress={onPress}
-                  onLongPress={onLongPress}
-                  isRTL={isRTL}
-                />
-              );
-            })}
+                const onLongPress = () => {
+                  navigation.emit({
+                    type: "tabLongPress",
+                    target: route.key,
+                  });
+                };
+
+                return (
+                  <TabItem
+                    key={route.key}
+                    route={route.name}
+                    isFocused={isFocused}
+                    label={label}
+                    onPress={onPress}
+                    onLongPress={onLongPress}
+                    isRTL={isRTL}
+                    activeColor={activeColor}
+                    inactiveColor={inactiveColor}
+                  />
+                );
+              })}
+            </View>
           </View>
         </View>
       </View>
@@ -279,13 +443,11 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: TOP_RADIUS,
     borderTopRightRadius: TOP_RADIUS,
     borderTopWidth: 1,
-    borderColor: TOP_BORDER,
     paddingTop: TOP_PAD,
     paddingHorizontal: H_PAD,
   },
   glassWash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: GLASS_WASH,
   },
   topBorder: {
     position: "absolute",
@@ -293,7 +455,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.68)",
+  },
+  content: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  pillSlot: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+  },
+  pillCapsule: {
+    flex: 1,
+    marginHorizontal: 10,
+    marginVertical: 4,
+    borderRadius: CAPSULE_RADIUS,
+    overflow: "hidden",
   },
   tabs: {
     flex: 1,

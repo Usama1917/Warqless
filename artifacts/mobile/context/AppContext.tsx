@@ -14,6 +14,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Platform } from "react-native";
@@ -257,6 +258,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSessionMessage("");
   }, []);
 
+  // Refs so the run-once session-restore effect can read the latest values
+  // without re-running when purchasedBooks / saveSession identity changes.
+  const purchasedBooksRef = useRef(purchasedBooks);
+  const saveSessionRef = useRef(saveSession);
+  const expireSessionRef = useRef(expireSession);
+  purchasedBooksRef.current = purchasedBooks;
+  saveSessionRef.current = saveSession;
+  expireSessionRef.current = expireSession;
+  const hasRestoredRef = useRef(false);
+
   useEffect(() => {
     let active = true;
     const loadSettings = async () => {
@@ -336,6 +347,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [purchasedBooks, user]);
 
   useEffect(() => {
+    // Session restoration must run exactly once on mount. Re-running it on
+    // purchasedBooks / saveSession identity changes would re-read the stale
+    // stored session and re-trigger device verification during normal use.
+    if (hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+
     const loadSession = async () => {
       try {
         const stored = await AsyncStorage.getItem(SESSION_STORAGE_KEY);
@@ -350,12 +367,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const settings = await fetchPlatformSettings().catch(() => DEFAULT_PLATFORM_SETTINGS);
           setPlatformSettings(settings);
           if (isSessionForceLoggedOut(issuedAt, settings)) {
-            await expireSession("force_logout");
+            await expireSessionRef.current("force_logout");
             setIsLoading(false);
             return;
           }
           if (isSessionExpired(issuedAt, settings)) {
-            await expireSession("expired");
+            await expireSessionRef.current("expired");
             setIsLoading(false);
             return;
           }
@@ -366,7 +383,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           try {
             const result = await verifyStudentDevice({
               studentId: loggedUser.id,
-              student: getVerificationStudentPayload(loggedUser, purchasedBooks),
+              student: getVerificationStudentPayload(loggedUser, purchasedBooksRef.current),
               device: await getCurrentDevicePayload("active"),
             });
 
@@ -387,13 +404,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
 
           setUser(loggedUser);
-          await saveSession(loggedUser, issuedAt);
+          await saveSessionRef.current(loggedUser, issuedAt);
         }
       } catch {}
       setIsLoading(false);
     };
     loadSession();
-  }, [expireSession, purchasedBooks, saveSession]);
+  }, []);
 
   const login = useCallback(
     async (email: string, _password: string): Promise<"ok" | "invalid" | "device_blocked" | "security_unavailable"> => {
@@ -589,8 +606,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateReadingProgress = useCallback(
     (bookId: string, page: number, progress: number) => {
-      setPurchasedBooks((prev) =>
-        prev.map((b) =>
+      setPurchasedBooks((prev) => {
+        const target = prev.find((b) => b.id === bookId);
+        // No-op when nothing changed: avoid rewriting lastOpened and re-rendering.
+        if (!target || (target.lastPage === page && target.progress === progress)) {
+          return prev;
+        }
+        return prev.map((b) =>
           b.id === bookId
             ? {
                 ...b,
@@ -599,8 +621,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                 lastOpened: new Date().toISOString().split("T")[0],
               }
             : b
-        )
-      );
+        );
+      });
     },
     []
   );

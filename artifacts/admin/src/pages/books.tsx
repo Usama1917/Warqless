@@ -337,9 +337,6 @@ export default function BooksPage() {
     let active = true;
 
     const loadBooksFromLocalApi = async (attempt = 0) => {
-      const localHasBooks = hasStoredBooks();
-      const localUpdatedAt = getStoredBooksUpdatedAt();
-      const localUpdatedAtMs = parseDateMs(localUpdatedAt);
       const synced = await fetchSyncedAdminBooks();
 
       if (!active) return;
@@ -353,6 +350,11 @@ export default function BooksPage() {
         return;
       }
 
+      // Re-read local state AFTER the await so edits committed during the
+      // in-flight request (handleAddBook / confirmDeleteBook) are respected
+      // before deciding whether to adopt the synced catalog books.
+      const localHasBooks = hasStoredBooks();
+      const localUpdatedAtMs = parseDateMs(getStoredBooksUpdatedAt());
       const apiUpdatedAtMs = parseDateMs(synced.updatedAt);
 
       if (!localHasBooks || (localUpdatedAtMs > 0 && apiUpdatedAtMs > localUpdatedAtMs)) {

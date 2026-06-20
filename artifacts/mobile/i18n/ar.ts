@@ -133,6 +133,10 @@ const ar: TranslationKeys = {
     version: "ورقلس v1.0.0 · كتبك. بلا ورق.",
     language: "اللغة",
     sectionPreferences: "التفضيلات",
+    appearance: "المظهر",
+    useDeviceSettings: "حسب إعدادات الجهاز",
+    themeLight: "فاتح",
+    themeDark: "داكن",
   },
 
   auth: {
@@ -159,6 +163,7 @@ const ar: TranslationKeys = {
     passwordPlaceholder: "أدخل كلمة المرور",
     forgotPassword: "نسيت كلمة المرور؟",
     fillAll: "يرجى ملء جميع الحقول.",
+    signInRequired: "يرجى تسجيل الدخول لشراء هذا الكتاب.",
     invalidCredentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مجدداً.",
     error: "حدث خطأ ما. يرجى المحاولة مجدداً.",
     sessionExpired: "انتهت الجلسة. برجاء تسجيل الدخول مرة أخرى.",

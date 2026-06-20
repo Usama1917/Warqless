@@ -8,6 +8,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -18,6 +19,7 @@ import { AnimatedEntrance } from "@/components/AnimatedEntrance";
 import { EmptyState } from "@/components/EmptyState";
 import { useApp } from "@/context/AppContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useTheme } from "@/context/ThemeContext";
 import { useColors } from "@/hooks/useColors";
 import type { Language } from "@/i18n";
 
@@ -142,6 +144,99 @@ function LanguageSwitcher() {
         </Pressable>
       ))}
     </View>
+  );
+}
+
+function AppearanceControl() {
+  const colors = useColors();
+  const { t, isRTL } = useLanguage();
+  const { preference, followSystem, setFollowSystem, setPreference } = useTheme();
+
+  const themeOptions: { label: string; value: "light" | "dark" }[] = [
+    { label: t.account.themeLight, value: "light" },
+    { label: t.account.themeDark, value: "dark" },
+  ];
+
+  return (
+    <>
+      {/* Follow device settings + switch */}
+      <View
+        style={[
+          styles.menuItem,
+          {
+            borderBottomColor: colors.border,
+            flexDirection: isRTL ? "row-reverse" : "row",
+          },
+        ]}
+      >
+        <View style={[styles.menuIconWrap, { backgroundColor: colors.secondary }]}>
+          <Ionicons name="phone-portrait-outline" size={18} color={colors.primary} />
+        </View>
+        <View style={styles.menuContent}>
+          <Text style={[styles.menuLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+            {t.account.useDeviceSettings}
+          </Text>
+        </View>
+        <Switch
+          value={followSystem}
+          onValueChange={setFollowSystem}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor="#fff"
+          ios_backgroundColor={colors.border}
+        />
+      </View>
+
+      {/* Light / Dark pills (dimmed while following the device) */}
+      <View
+        style={[
+          styles.menuItem,
+          styles.menuItemLast,
+          { flexDirection: isRTL ? "row-reverse" : "row" },
+        ]}
+      >
+        <View style={[styles.menuIconWrap, { backgroundColor: colors.secondary }]}>
+          <Ionicons name="contrast-outline" size={18} color={colors.primary} />
+        </View>
+        <View style={styles.menuContent}>
+          <Text style={[styles.menuLabel, { color: colors.foreground }, isRTL && styles.rtlText]}>
+            {t.account.appearance}
+          </Text>
+        </View>
+        <View
+          style={[
+            styles.langRow,
+            isRTL && styles.rtlRow,
+            followSystem && styles.themePillsDimmed,
+          ]}
+        >
+          {themeOptions.map((opt) => {
+            const selected = !followSystem && preference === opt.value;
+            return (
+              <Pressable
+                key={opt.value}
+                onPress={() => setPreference(opt.value)}
+                style={[
+                  styles.langBtn,
+                  {
+                    backgroundColor: selected ? colors.primary : colors.secondary,
+                    borderColor: selected ? colors.primary : colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.langBtnText,
+                    { color: selected ? "#fff" : colors.foreground },
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </>
   );
 }
 
@@ -329,6 +424,7 @@ export default function AccountScreen() {
               </View>
               <LanguageSwitcher />
             </View>
+            <AppearanceControl />
           </View>
         </View>
       </AnimatedEntrance>
@@ -683,6 +779,12 @@ const styles = StyleSheet.create({
   langRow: {
     flexDirection: "row",
     gap: 6,
+  },
+  themePillsDimmed: {
+    opacity: 0.45,
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
   },
   rtlRow: {
     flexDirection: "row-reverse",

@@ -452,11 +452,22 @@ export default function SecurityPage() {
     setEventDetailLoading(true);
 
     try {
-      setSelectedEvent(await fetchSecurityEvent(user, eventId));
+      const ev = await fetchSecurityEvent(user, eventId);
+      setSelectedEventId((curr) => {
+        if (curr === eventId) {
+          setSelectedEvent(ev);
+          setEventDetailLoading(false);
+        }
+        return curr;
+      });
     } catch (error) {
-      setEventDetailError(error instanceof Error ? error.message : t.security.loadError);
-    } finally {
-      setEventDetailLoading(false);
+      setSelectedEventId((curr) => {
+        if (curr === eventId) {
+          setEventDetailError(error instanceof Error ? error.message : t.security.loadError);
+          setEventDetailLoading(false);
+        }
+        return curr;
+      });
     }
   };
 

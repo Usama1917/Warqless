@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -33,6 +33,18 @@ export default function BrowseScreen() {
   const [selectedSubject, setSelectedSubject] = useState<string>(params.subject ?? "");
   const [selectedType, setSelectedType] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Tab screens stay mounted, so the useState initializers above only see the
+  // first navigation's params. Sync incoming grade/subject params into state on
+  // every navigation. Only apply non-empty values so a manually cleared filter
+  // isn't re-applied (Home always pushes a non-empty grade/subject).
+  useEffect(() => {
+    if (params.grade) setSelectedGrade(params.grade);
+  }, [params.grade]);
+
+  useEffect(() => {
+    if (params.subject) setSelectedSubject(params.subject);
+  }, [params.subject]);
 
   const filtered = useMemo(() => {
     return books.filter((b) => {

@@ -131,6 +131,10 @@ const en = {
     version: "Warqless v1.0.0 · Your books. No paper.",
     language: "Language",
     sectionPreferences: "PREFERENCES",
+    appearance: "Appearance",
+    useDeviceSettings: "Use device settings",
+    themeLight: "Light",
+    themeDark: "Dark",
   },
 
   auth: {
@@ -157,6 +161,7 @@ const en = {
     passwordPlaceholder: "Enter your password",
     forgotPassword: "Forgot password?",
     fillAll: "Please fill in all fields.",
+    signInRequired: "Please sign in to purchase this book.",
     invalidCredentials: "Invalid email or password. Please try again.",
     error: "Something went wrong. Please try again.",
     sessionExpired: "Your session expired. Please login again.",

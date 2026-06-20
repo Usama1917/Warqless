@@ -110,6 +110,12 @@ export default function AuthScreen() {
         } else if (result.status === "security_unavailable") {
           setError(t.protection.securityUnavailableDesc);
         } else if (result.status === "phone_verification_unavailable") {
+          // The account is already created and authenticated; enter the
+          // verification UI so the user can retry via "Resend code" instead of
+          // being stranded on the auth modal.
+          setPendingPhoneVerification(true);
+          setDevOtpCode("");
+          setOtpCode("");
           setError(result.error ?? t.auth.error);
         } else {
           setError(t.auth.error);

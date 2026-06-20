@@ -117,6 +117,7 @@ function NumberSetting({
           max={max}
           value={value}
           onChange={(event) => {
+            if (event.target.value.trim() === "") return;
             const parsed = Number(event.target.value);
             if (!Number.isFinite(parsed)) return;
             onChange(Math.min(Math.max(Math.trunc(parsed), min), max));
@@ -275,8 +276,8 @@ export default function SettingsPage() {
     twoFaSendOtpDisable: language === "ar" ? "إرسال كود SMS بدلاً من ذلك" : "Send SMS code instead",
     twoFaConfirm: language === "ar" ? "تأكيد" : "Confirm",
     twoFaCancel: language === "ar" ? "إلغاء" : "Cancel",
-    missingVerifiedPhone: language === "ar" ? "Please add and verify your phone number first." : "Please add and verify your phone number first.",
-    unverifiedPhone: language === "ar" ? "Please verify your phone number before enabling 2FA." : "Please verify your phone number before enabling 2FA.",
+    missingVerifiedPhone: language === "ar" ? "يرجى إضافة رقم هاتفك وتوثيقه أولاً." : "Please add and verify your phone number first.",
+    unverifiedPhone: language === "ar" ? "يرجى توثيق رقم هاتفك قبل تفعيل المصادقة الثنائية." : "Please verify your phone number before enabling 2FA.",
     enforced: language === "ar" ? "فعّال" : "Enforced",
     savedPolicy: language === "ar" ? "سياسة محفوظة" : "Saved policy",
     sessionMarker: language === "ar" ? "مؤشر جلسات" : "Session marker",

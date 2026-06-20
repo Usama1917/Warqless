@@ -238,6 +238,42 @@ function getAdminAuthHeaders(user: AdminUser | null): HeadersInit {
   };
 }
 
+// Mirrors the session persisted by AuthContext so catalog sync helpers that are
+// not called with an AdminUser (e.g. from non-React storage utilities) can still
+// send the admin auth headers required by the now-guarded catalog endpoints.
+const CURRENT_ADMIN_USER_STORAGE_KEY = "warqless_admin_current_user";
+
+function readStoredAdminUser(): AdminUser | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(CURRENT_ADMIN_USER_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (
+      parsed &&
+      typeof parsed.id === "string" &&
+      typeof parsed.email === "string" &&
+      (parsed.role === "admin" || parsed.role === "publisher")
+    ) {
+      return {
+        id: parsed.id,
+        name: typeof parsed.name === "string" ? parsed.name : "",
+        email: parsed.email,
+        role: parsed.role,
+        publisherId: typeof parsed.publisherId === "string" ? parsed.publisherId : undefined,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getStoredAdminAuthHeaders(): HeadersInit {
+  return getAdminAuthHeaders(readStoredAdminUser());
+}
+
 function appendDefinedSearchParam(params: URLSearchParams, key: string, value: string | number | boolean | undefined) {
   if (value === undefined || value === "") return;
   params.set(key, String(value));
@@ -468,7 +504,10 @@ export function syncCatalogBooks(books: StoredAdminBook[]) {
 
   void fetch(`${apiBaseUrl}/catalog/books`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      ...getStoredAdminAuthHeaders(),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ books }),
   }).catch(() => {
     // Local demo sync is best-effort. The admin UI should still save locally if the API is off.
@@ -493,7 +532,10 @@ export async function fetchSyncedStudents(): Promise<Student[]> {
   const apiBaseUrl = getAdminApiBaseUrl();
   if (!apiBaseUrl) return [];
 
-  const response = await fetch(`${apiBaseUrl}/students`, { cache: "no-store" }).catch(() => null);
+  const response = await fetch(`${apiBaseUrl}/students`, {
+    cache: "no-store",
+    headers: getStoredAdminAuthHeaders(),
+  }).catch(() => null);
   if (!response?.ok) return [];
 
   const data = await response.json() as { students?: Student[] };
@@ -506,7 +548,10 @@ export function syncStudentStatus(studentId: string, status: Student["status"]) 
 
   void fetch(`${apiBaseUrl}/students/${encodeURIComponent(studentId)}/status`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      ...getStoredAdminAuthHeaders(),
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({ status }),
   }).catch(() => {
     // Local admin status changes are saved even if the local API is not running.
@@ -517,7 +562,10 @@ export async function fetchSyncedOrders(): Promise<Order[]> {
   const apiBaseUrl = getAdminApiBaseUrl();
   if (!apiBaseUrl) return [];
 
-  const response = await fetch(`${apiBaseUrl}/orders`, { cache: "no-store" }).catch(() => null);
+  const response = await fetch(`${apiBaseUrl}/orders`, {
+    cache: "no-store",
+    headers: getStoredAdminAuthHeaders(),
+  }).catch(() => null);
   if (!response?.ok) return [];
 
   const data = await response.json() as { orders?: Order[] };

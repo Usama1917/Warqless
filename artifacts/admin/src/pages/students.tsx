@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ArrowLeftRight,
   BookOpen,
@@ -146,6 +146,9 @@ export default function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [statusActionTarget, setStatusActionTarget] = useState<Student | null>(null);
+  // Tracks status changes the admin just applied locally but that the backend may
+  // not have processed yet. The 5s poll must not overwrite these with stale data.
+  const pendingStatusChanges = useRef(new Map<string, Student["status"]>());
 
   const filtered = students.filter((s) => {
     const matchSearch =
@@ -174,11 +177,24 @@ export default function StudentsPage() {
       if (!active) return;
 
       if (nextStudents.length > 0) {
-        setStudents(nextStudents);
-        saveStoredStudents(nextStudents);
+        // Preserve any status change the admin just applied locally until the backend
+        // response actually reflects it; otherwise a poll that lands mid-PATCH would
+        // revert the change in both state and localStorage.
+        const reconciledStudents = nextStudents.map((student) => {
+          const pendingStatus = pendingStatusChanges.current.get(student.id);
+          if (pendingStatus === undefined) return student;
+          if (student.status === pendingStatus) {
+            pendingStatusChanges.current.delete(student.id);
+            return student;
+          }
+          return { ...student, status: pendingStatus };
+        });
+
+        setStudents(reconciledStudents);
+        saveStoredStudents(reconciledStudents);
         setSelectedStudent((selected) => {
           if (!selected) return selected;
-          return nextStudents.find((student) => student.id === selected.id) ?? selected;
+          return reconciledStudents.find((student) => student.id === selected.id) ?? selected;
         });
       }
       setSyncedOrders(nextOrders);
@@ -240,6 +256,10 @@ export default function StudentsPage() {
       student.id === currentStudent.id ? { ...student, status: nextStatus } : student,
     );
     const updatedStudent = nextStudents.find((student) => student.id === currentStudent.id);
+
+    // Record the optimistic change so the polling loop does not overwrite it with a
+    // stale GET /students response before the backend has applied this PATCH.
+    pendingStatusChanges.current.set(currentStudent.id, nextStatus);
 
     saveStoredStudents(nextStudents);
     syncStudentStatus(currentStudent.id, nextStatus);
@@ -635,7 +655,6 @@ export default function StudentsPage() {
                             <p className="mb-2 text-xs text-muted-foreground">{event.message}</p>
                             <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                               <span>{t.students.deviceId}: <strong className="text-foreground">{event.deviceId}</strong></span>
-                              <span>{t.common.status}: <strong className="text-foreground">{event.severity}</strong></span>
                               {event.metadata &&
                                 Object.entries(event.metadata).map(([key, value]) => (
                                   <span key={key}>{key}: <strong className="text-foreground">{value}</strong></span>

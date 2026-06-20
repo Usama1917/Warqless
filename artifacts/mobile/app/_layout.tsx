@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -10,10 +11,17 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AppProvider } from "@/context/AppContext";
 import { CatalogProvider } from "@/context/CatalogContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function ThemedStatusBar() {
+  const { scheme } = useTheme();
+  // "light" = light-colored icons (for dark backgrounds) and vice versa.
+  return <StatusBar style={scheme === "dark" ? "light" : "dark"} />;
+}
 
 function RootLayoutNav() {
   return (
@@ -43,21 +51,24 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <LanguageProvider>
-            <CatalogProvider>
-              <AppProvider>
-                <GestureHandlerRootView>
-                  <KeyboardProvider>
-                    <RootLayoutNav />
-                  </KeyboardProvider>
-                </GestureHandlerRootView>
-              </AppProvider>
-            </CatalogProvider>
-          </LanguageProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <LanguageProvider>
+              <CatalogProvider>
+                <AppProvider>
+                  <GestureHandlerRootView>
+                    <KeyboardProvider>
+                      <ThemedStatusBar />
+                      <RootLayoutNav />
+                    </KeyboardProvider>
+                  </GestureHandlerRootView>
+                </AppProvider>
+              </CatalogProvider>
+            </LanguageProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

@@ -363,6 +363,21 @@ export default function PublishersPage() {
     toast({ title: t.publishers.publisherDeletedSuccess });
   };
 
+  const togglePublisherStatus = (publisher: CreatedPublisher) => {
+    const nextStatus: Publisher["status"] =
+      publisher.status === "active" ? "suspended" : "active";
+    const updatedPublisher: CreatedPublisher = { ...publisher, status: nextStatus };
+
+    setCreatedPublishers((current) => {
+      const next = [
+        updatedPublisher,
+        ...current.filter((existing) => existing.id !== publisher.id),
+      ];
+      saveStoredPublishers(next);
+      return next;
+    });
+  };
+
   const handleAddPublisher = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!canSavePublisher) return;
@@ -476,9 +491,9 @@ export default function PublishersPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span>{t.common.joined} {formatDate(publisher.joinedAt, { month: "short", year: "numeric" })}</span>
-                <div className="flex items-center gap-1 text-emerald-600 font-medium">
+                <div className={cn("flex items-center gap-1 font-medium", publisher.status === "active" ? "text-emerald-600" : "text-destructive")}>
                   <TrendingUp size={11} />
-                  <span>{t.common.active}</span>
+                  <span>{t.common[publisher.status]}</span>
                 </div>
               </div>
             </div>
@@ -499,11 +514,19 @@ export default function PublishersPage() {
                 {t.common.edit}
               </button>
               {publisher.status === "active" ? (
-                <button className="flex-1 py-1.5 text-xs font-medium text-destructive border border-destructive/30 rounded-lg hover:bg-destructive/5 transition">
+                <button
+                  type="button"
+                  onClick={() => togglePublisherStatus(publisher)}
+                  className="flex-1 py-1.5 text-xs font-medium text-destructive border border-destructive/30 rounded-lg hover:bg-destructive/5 transition"
+                >
                   {t.common.suspend}
                 </button>
               ) : (
-                <button className="flex-1 py-1.5 text-xs font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition">
+                <button
+                  type="button"
+                  onClick={() => togglePublisherStatus(publisher)}
+                  className="flex-1 py-1.5 text-xs font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition"
+                >
                   {t.common.reactivate}
                 </button>
               )}

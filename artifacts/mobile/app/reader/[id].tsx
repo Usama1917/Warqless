@@ -278,7 +278,7 @@ export default function ReaderScreen() {
     if (purchasedBook && accessResult?.allowed) {
       updateReadingProgress(purchasedBook.id, currentPage, Math.min(progress, 100));
     }
-  }, [accessResult, currentPage, purchasedBook, totalPages, updateReadingProgress]);
+  }, [accessResult?.allowed, currentPage, purchasedBook?.id, totalPages, updateReadingProgress]);
 
   const toggleToolbar = useCallback(() => {
     const toValue = showToolbar ? 0 : 1;

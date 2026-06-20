@@ -46,7 +46,7 @@ export function getPhoneVerificationExpiresAt() {
 }
 
 export function shouldExposeDevPhoneOtp() {
-  return process.env.NODE_ENV !== "production";
+  return process.env.NODE_ENV === "development";
 }
 
 export function logDevPhoneOtp(accountType: string, accountId: string, phone: string, code: string) {

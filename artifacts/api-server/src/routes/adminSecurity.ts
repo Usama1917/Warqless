@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getAdminActor, requireAdmin } from "../middlewares/adminAuth";
+import { runExclusive } from "../lib/stateMutex";
 
 type SecuritySeverity = "low" | "medium" | "high" | "critical";
 type DeviceResetStatus = "pending" | "approved" | "rejected";
@@ -271,6 +272,11 @@ function getSecurityEvents(state: CatalogState) {
   return [...studentEvents, ...adminEvents].sort((a, b) => eventTimestamp(b) - eventTimestamp(a));
 }
 
+function maskDeviceId(id: string): string {
+  if (id.length <= 8) return "********";
+  return `${id.slice(0, 4)}********${id.slice(-4)}`;
+}
+
 function currentDeviceIdFor(student: StoredStudent, request: StoredDeviceResetRequest) {
   return request.currentDeviceId ?? request.deviceId ?? student.currentDevice?.deviceId ?? "unknown";
 }
@@ -285,7 +291,7 @@ function toDeviceResetRequestResponse(
     userId: student.id,
     userName: student.name,
     userEmail: student.email,
-    currentDeviceId: currentDeviceIdFor(student, request),
+    currentDeviceId: maskDeviceId(currentDeviceIdFor(student, request)),
     requestedDeviceId: request.requestedDeviceId,
     reason: request.reason,
     status: request.status,
@@ -482,40 +488,46 @@ router.get("/admin/security/events/:id", async (req, res, next) => {
 
 router.patch("/admin/security/events/:id/review", async (req, res, next) => {
   try {
-    const state = await readState();
-    const found = findStoredSecurityEvent(state, req.params.id);
-    if (!found) {
-      res.status(404).json({ message: "Security event not found" });
-      return;
-    }
+    const result = await runExclusive(async () => {
+      const state = await readState();
+      const found = findStoredSecurityEvent(state, req.params.id);
+      if (!found) {
+        return { status: 404, body: { message: "Security event not found" } };
+      }
 
-    const admin = getAdminActor(req);
-    const now = new Date().toISOString();
-    found.event.reviewed = true;
-    found.event.reviewedAt = now;
-    found.event.reviewedByAdminId = admin.id;
+      const admin = getAdminActor(req);
+      const now = new Date().toISOString();
+      found.event.reviewed = true;
+      found.event.reviewedAt = now;
+      found.event.reviewedByAdminId = admin.id;
 
-    appendAuditLog(state, {
-      adminId: admin.id,
-      action: "security_event.reviewed",
-      targetType: "security_event",
-      targetId: found.event.id,
-      message: `Admin ${admin.email} reviewed security event ${found.event.id}.`,
-      metadata: {
-        eventType: found.event.type,
-        severity: found.event.severity,
-        userId: found.kind === "admin" ? found.event.userId : found.student.id,
-      },
+      appendAuditLog(state, {
+        adminId: admin.id,
+        action: "security_event.reviewed",
+        targetType: "security_event",
+        targetId: found.event.id,
+        message: `Admin ${admin.email} reviewed security event ${found.event.id}.`,
+        metadata: {
+          eventType: found.event.type,
+          severity: found.event.severity,
+          userId: found.kind === "admin" ? found.event.userId : found.student.id,
+        },
+      });
+
+      state.updatedAt = now;
+      await writeState(state);
+
+      return {
+        status: 200,
+        body: {
+          event: found.kind === "admin"
+            ? toAdminSecurityEventResponse(found.event)
+            : toSecurityEventResponse(found.student, found.event),
+        },
+      };
     });
 
-    state.updatedAt = now;
-    await writeState(state);
-
-    res.json({
-      event: found.kind === "admin"
-        ? toAdminSecurityEventResponse(found.event)
-        : toSecurityEventResponse(found.student, found.event),
-    });
+    res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }
@@ -604,64 +616,70 @@ router.get("/admin/device-reset-requests/:id", async (req, res, next) => {
 
 router.post("/admin/device-reset-requests/:id/approve", async (req, res, next) => {
   try {
-    const state = await readState();
-    const found = findStoredDeviceResetRequest(state, req.params.id);
-    if (!found) {
-      res.status(404).json({ message: "Device reset request not found" });
-      return;
-    }
+    const result = await runExclusive(async () => {
+      const state = await readState();
+      const found = findStoredDeviceResetRequest(state, req.params.id);
+      if (!found) {
+        return { status: 404, body: { message: "Device reset request not found" } };
+      }
 
-    if (found.request.status !== "pending") {
-      res.status(409).json({ message: "Only pending requests can be approved" });
-      return;
-    }
+      if (found.request.status !== "pending") {
+        return { status: 409, body: { message: "Only pending requests can be approved" } };
+      }
 
-    const admin = getAdminActor(req);
-    const now = new Date().toISOString();
-    const currentDeviceId = currentDeviceIdFor(found.student, found.request);
-    const adminNote = isRecord(req.body) && typeof req.body.adminNote === "string"
-      ? req.body.adminNote
-      : undefined;
+      const admin = getAdminActor(req);
+      const now = new Date().toISOString();
+      const currentDeviceId = currentDeviceIdFor(found.student, found.request);
+      const adminNote = isRecord(req.body) && typeof req.body.adminNote === "string"
+        ? req.body.adminNote
+        : undefined;
 
-    found.request.status = "approved";
-    found.request.resolvedAt = now;
-    found.request.resolvedByAdminId = admin.id;
-    found.request.adminNote = adminNote;
-    found.request.updatedAt = now;
-    markCurrentDevicePendingReset(found.student, currentDeviceId);
+      found.request.status = "approved";
+      found.request.resolvedAt = now;
+      found.request.resolvedByAdminId = admin.id;
+      found.request.adminNote = adminNote;
+      found.request.updatedAt = now;
+      markCurrentDevicePendingReset(found.student, currentDeviceId);
 
-    appendStudentSecurityEvent(found.student, {
-      id: createId("evt"),
-      type: "device_reset_approved",
-      severity: "low",
-      deviceId: currentDeviceId,
-      message: `Admin approved device reset request for ${found.student.name}. Student can register a new device on next login.`,
-      metadata: {
-        requestId: found.request.id,
-        approvedByAdminId: admin.id,
-        approvedByAdminEmail: admin.email,
-      },
-      createdAt: now,
+      appendStudentSecurityEvent(found.student, {
+        id: createId("evt"),
+        type: "device_reset_approved",
+        severity: "low",
+        deviceId: maskDeviceId(currentDeviceId),
+        deviceIdMasked: maskDeviceId(currentDeviceId),
+        message: `Admin approved device reset request for ${found.student.name}. Student can register a new device on next login.`,
+        metadata: {
+          requestId: found.request.id,
+          approvedByAdminId: admin.id,
+          approvedByAdminEmail: admin.email,
+        },
+        createdAt: now,
+      });
+
+      appendAuditLog(state, {
+        adminId: admin.id,
+        action: "device_reset_request.approved",
+        targetType: "device_reset_request",
+        targetId: found.request.id,
+        message: `Admin ${admin.email} approved device reset request ${found.request.id}.`,
+        metadata: {
+          userId: found.student.id,
+          currentDeviceId,
+          requestedDeviceId: found.request.requestedDeviceId,
+          adminNote,
+        },
+      });
+
+      state.updatedAt = now;
+      await writeState(state);
+
+      return {
+        status: 200,
+        body: { request: toDeviceResetRequestResponse(found.student, found.request) },
+      };
     });
 
-    appendAuditLog(state, {
-      adminId: admin.id,
-      action: "device_reset_request.approved",
-      targetType: "device_reset_request",
-      targetId: found.request.id,
-      message: `Admin ${admin.email} approved device reset request ${found.request.id}.`,
-      metadata: {
-        userId: found.student.id,
-        currentDeviceId,
-        requestedDeviceId: found.request.requestedDeviceId,
-        adminNote,
-      },
-    });
-
-    state.updatedAt = now;
-    await writeState(state);
-
-    res.json({ request: toDeviceResetRequestResponse(found.student, found.request) });
+    res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }
@@ -669,63 +687,69 @@ router.post("/admin/device-reset-requests/:id/approve", async (req, res, next) =
 
 router.post("/admin/device-reset-requests/:id/reject", async (req, res, next) => {
   try {
-    const state = await readState();
-    const found = findStoredDeviceResetRequest(state, req.params.id);
-    if (!found) {
-      res.status(404).json({ message: "Device reset request not found" });
-      return;
-    }
+    const result = await runExclusive(async () => {
+      const state = await readState();
+      const found = findStoredDeviceResetRequest(state, req.params.id);
+      if (!found) {
+        return { status: 404, body: { message: "Device reset request not found" } };
+      }
 
-    if (found.request.status !== "pending") {
-      res.status(409).json({ message: "Only pending requests can be rejected" });
-      return;
-    }
+      if (found.request.status !== "pending") {
+        return { status: 409, body: { message: "Only pending requests can be rejected" } };
+      }
 
-    const admin = getAdminActor(req);
-    const now = new Date().toISOString();
-    const currentDeviceId = currentDeviceIdFor(found.student, found.request);
-    const adminNote = isRecord(req.body) && typeof req.body.adminNote === "string"
-      ? req.body.adminNote
-      : undefined;
+      const admin = getAdminActor(req);
+      const now = new Date().toISOString();
+      const currentDeviceId = currentDeviceIdFor(found.student, found.request);
+      const adminNote = isRecord(req.body) && typeof req.body.adminNote === "string"
+        ? req.body.adminNote
+        : undefined;
 
-    found.request.status = "rejected";
-    found.request.resolvedAt = now;
-    found.request.resolvedByAdminId = admin.id;
-    found.request.adminNote = adminNote;
-    found.request.updatedAt = now;
+      found.request.status = "rejected";
+      found.request.resolvedAt = now;
+      found.request.resolvedByAdminId = admin.id;
+      found.request.adminNote = adminNote;
+      found.request.updatedAt = now;
 
-    appendStudentSecurityEvent(found.student, {
-      id: createId("evt"),
-      type: "device_reset_rejected",
-      severity: "medium",
-      deviceId: currentDeviceId,
-      message: `Admin rejected device reset request for ${found.student.name}.`,
-      metadata: {
-        requestId: found.request.id,
-        rejectedByAdminId: admin.id,
-        rejectedByAdminEmail: admin.email,
-        adminNote,
-      },
-      createdAt: now,
+      appendStudentSecurityEvent(found.student, {
+        id: createId("evt"),
+        type: "device_reset_rejected",
+        severity: "medium",
+        deviceId: maskDeviceId(currentDeviceId),
+        deviceIdMasked: maskDeviceId(currentDeviceId),
+        message: `Admin rejected device reset request for ${found.student.name}.`,
+        metadata: {
+          requestId: found.request.id,
+          rejectedByAdminId: admin.id,
+          rejectedByAdminEmail: admin.email,
+          adminNote,
+        },
+        createdAt: now,
+      });
+
+      appendAuditLog(state, {
+        adminId: admin.id,
+        action: "device_reset_request.rejected",
+        targetType: "device_reset_request",
+        targetId: found.request.id,
+        message: `Admin ${admin.email} rejected device reset request ${found.request.id}.`,
+        metadata: {
+          userId: found.student.id,
+          currentDeviceId,
+          adminNote,
+        },
+      });
+
+      state.updatedAt = now;
+      await writeState(state);
+
+      return {
+        status: 200,
+        body: { request: toDeviceResetRequestResponse(found.student, found.request) },
+      };
     });
 
-    appendAuditLog(state, {
-      adminId: admin.id,
-      action: "device_reset_request.rejected",
-      targetType: "device_reset_request",
-      targetId: found.request.id,
-      message: `Admin ${admin.email} rejected device reset request ${found.request.id}.`,
-      metadata: {
-        userId: found.student.id,
-        currentDeviceId,
-        adminNote,
-      },
-    });
-
-    state.updatedAt = now;
-    await writeState(state);
-
-    res.json({ request: toDeviceResetRequestResponse(found.student, found.request) });
+    res.status(result.status).json(result.body);
   } catch (err) {
     next(err);
   }

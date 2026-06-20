@@ -41,7 +41,7 @@ export default function BookDetailScreen() {
 
   const handlePurchase = async () => {
     if (!isAuthenticated) {
-      Alert.alert(t.common.confirm, t.auth.fillAll, [
+      Alert.alert(t.auth.signIn, t.auth.signInRequired, [
         { text: t.common.cancel, style: "cancel" },
         { text: t.auth.signIn, onPress: () => router.push("/auth") },
       ]);

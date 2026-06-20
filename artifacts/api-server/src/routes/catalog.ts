@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireAdmin } from "../middlewares/adminAuth";
 import {
   PHONE_VERIFICATION_MAX_ATTEMPTS,
   createPhoneVerificationCode,
@@ -649,8 +650,8 @@ function normalizeSecurityEvent(value: unknown): StudentSecurityEvent | undefine
       value.severity === "medium" || value.severity === "high" || value.severity === "critical"
         ? value.severity
         : "low",
-    deviceId: typeof value.deviceId === "string" ? value.deviceId : "unknown",
-    deviceIdMasked: typeof value.deviceIdMasked === "string" ? value.deviceIdMasked : undefined,
+    deviceId: typeof value.deviceId === "string" ? maskDeviceId(value.deviceId) : "unknown",
+    deviceIdMasked: typeof value.deviceId === "string" ? maskDeviceId(value.deviceId) : undefined,
     message: value.message,
     createdAt: typeof value.createdAt === "string" ? value.createdAt : new Date().toISOString(),
     metadata: isRecord(value.metadata)
@@ -947,13 +948,19 @@ function buildStudentForDeviceVerification(id: string, value: unknown, device: S
   const email = typeof value.email === "string" && value.email.trim() ? value.email : undefined;
   if (!name || !email) return null;
   const normalizedPhone = typeof value.phone === "string" ? normalizeEgyptPhone(value.phone) ?? undefined : undefined;
+  const phoneVerified = normalizedPhone ? Boolean(value.phoneVerified) : false;
 
   return {
     id,
     name,
     email,
     phone: normalizedPhone,
-    phoneVerified: false,
+    phoneVerified,
+    phoneVerifiedAt: phoneVerified
+      ? typeof value.phoneVerifiedAt === "string"
+        ? value.phoneVerifiedAt
+        : now
+      : undefined,
     grade: typeof value.grade === "string" ? value.grade : "Grade 12",
     booksOwned: typeof value.booksOwned === "number" ? value.booksOwned : 0,
     booksBorrowed: 0,
@@ -1094,7 +1101,7 @@ router.get("/platform-settings", async (_req, res, next) => {
   }
 });
 
-router.put("/catalog/books", async (req, res, next) => {
+router.put("/catalog/books", requireAdmin, async (req, res, next) => {
   try {
     const incoming = Array.isArray(req.body?.books) ? req.body.books : [];
     const books = incoming.filter(isAdminBookInput);
@@ -1111,7 +1118,7 @@ router.put("/catalog/books", async (req, res, next) => {
   }
 });
 
-router.get("/orders", async (_req, res, next) => {
+router.get("/orders", requireAdmin, async (_req, res, next) => {
   try {
     const state = await readState();
     res.json({ orders: state.orders, updatedAt: state.updatedAt });
@@ -1120,7 +1127,7 @@ router.get("/orders", async (_req, res, next) => {
   }
 });
 
-router.get("/students", async (_req, res, next) => {
+router.get("/students", requireAdmin, async (_req, res, next) => {
   try {
     const state = await readState();
     res.json({
@@ -1534,7 +1541,7 @@ router.post("/students/:id/reader-access", async (req, res, next) => {
   }
 });
 
-router.patch("/students/:id/status", async (req, res, next) => {
+router.patch("/students/:id/status", requireAdmin, async (req, res, next) => {
   try {
     const nextStatus = req.body?.status === "suspended" ? "suspended" : "active";
     const state = await readState();
@@ -1742,7 +1749,7 @@ router.post("/orders", async (req, res, next) => {
     const couponCode = typeof req.body?.couponCode === "string" ? req.body.couponCode.trim() : "";
     const book = state.adminBooks.find((candidate) => candidate.id === bookId);
 
-    if (!book) {
+    if (!book || book.status !== "published") {
       res.status(404).json({ message: "Book not found" });
       return;
     }

@@ -22,7 +22,7 @@ export function StatCard({
   iconColor = "text-primary",
   iconBg = "bg-primary/10",
 }: StatCardProps) {
-  const { t } = useAdminLanguage();
+  const { t, formatNumber } = useAdminLanguage();
   const trendState = trend === undefined ? undefined : trend > 0 ? "up" : trend < 0 ? "down" : "flat";
 
   return (
@@ -51,7 +51,7 @@ export function StatCard({
               <span>
                 {trendState === "flat"
                   ? t.common.noChangeVsLastMonth
-                  : `${Math.abs(trend)}% ${t.common.vsLastMonth}`}
+                  : `${formatNumber(Math.abs(trend))}% ${t.common.vsLastMonth}`}
               </span>
             </div>
           )}

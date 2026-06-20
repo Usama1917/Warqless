@@ -15,6 +15,7 @@ import {
   verifyPhoneVerificationCode,
 } from "../lib/phoneVerification";
 import { PhoneOtpError, sendPhoneOtp, verifyPhoneOtp } from "../lib/phoneOtpService";
+import { runExclusive } from "../lib/stateMutex";
 
 type AdminLanguage = "en" | "ar";
 
@@ -913,7 +914,9 @@ router.post("/admin/auth/2fa/verify", async (req, res, next) => {
     }
 
     const account = settings.accounts.find((candidate) => candidate.id === challenge.accountId);
-    if (!account || !account.twoFactorEnabled || !account.phone || normalizeEgyptPhone(account.phone) !== challenge.phone) {
+    const twoFactorActive =
+      Boolean(account) && (account!.twoFactorEnabled || roleRequiresTwoFactor(settings.platform, account!.role));
+    if (!account || !twoFactorActive || !account.phone || normalizeEgyptPhone(account.phone) !== challenge.phone) {
       res.status(400).json({ message: "Two-factor challenge is no longer valid. Please sign in again." });
       return;
     }
@@ -938,27 +941,29 @@ router.post("/admin/auth/2fa/verify", async (req, res, next) => {
     try {
       await verifyPhoneOtp({ phone: challenge.phone, purpose: "login_2fa", code });
     } catch (error) {
-      const latestState = await readState();
-      const latestChallenges = sanitizeLoginChallenges(latestState.adminLoginChallenges, now.getTime());
-      const latestChallenge = latestChallenges.find((item) => item.id === challenge.id);
-      if (latestChallenge) {
-        latestChallenge.attempts += 1;
-        latestChallenge.status = latestChallenge.attempts >= latestChallenge.maxAttempts ? "failed" : "pending";
-        latestChallenge.updatedAt = nowIso;
-      }
-      appendAdminSecurityEvent(latestState, account, {
-        type: "two_factor_failed",
-        severity: latestChallenge && latestChallenge.attempts >= latestChallenge.maxAttempts ? "high" : "medium",
-        deviceIdMasked: "admin_login",
-        message: "Two-factor login challenge failed.",
-        metadata: {
-          challengeId: challenge.id,
-          attempts: latestChallenge?.attempts ?? challenge.attempts + 1,
-        },
+      await runExclusive(async () => {
+        const latestState = await readState();
+        const latestChallenges = sanitizeLoginChallenges(latestState.adminLoginChallenges, now.getTime());
+        const latestChallenge = latestChallenges.find((item) => item.id === challenge.id);
+        if (latestChallenge) {
+          latestChallenge.attempts += 1;
+          latestChallenge.status = latestChallenge.attempts >= latestChallenge.maxAttempts ? "failed" : "pending";
+          latestChallenge.updatedAt = nowIso;
+        }
+        appendAdminSecurityEvent(latestState, account, {
+          type: "two_factor_failed",
+          severity: latestChallenge && latestChallenge.attempts >= latestChallenge.maxAttempts ? "high" : "medium",
+          deviceIdMasked: "admin_login",
+          message: "Two-factor login challenge failed.",
+          metadata: {
+            challengeId: challenge.id,
+            attempts: latestChallenge?.attempts ?? challenge.attempts + 1,
+          },
+        });
+        latestState.adminLoginChallenges = latestChallenges;
+        latestState.updatedAt = nowIso;
+        await writeState(latestState);
       });
-      latestState.adminLoginChallenges = latestChallenges;
-      latestState.updatedAt = nowIso;
-      await writeState(latestState);
 
       if (respondPhoneOtpError(res, error)) return;
       throw error;
